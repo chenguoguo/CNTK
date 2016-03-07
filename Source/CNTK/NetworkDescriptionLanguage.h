@@ -870,12 +870,16 @@ public:
             return ndlNode;
         }
 
-        auto found = token.find_first_not_of("+-.0123456789eE");
+		const char* token_cstr = token.c_str();
+		char* pEnd;
+		double parsed = strtod(token_cstr, &pEnd);
+		
         // see if it's a numeric constant
-        if (found == npos)
+		if (parsed > 0.0 && pEnd != token_cstr)
         {
             ndlNode = new NDLNode<ElemType>("", token, this, ndlTypeConstant);
         }
+
         // not a constant, so must be a variable
         else
         {
