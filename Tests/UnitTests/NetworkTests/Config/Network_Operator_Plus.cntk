@@ -4,7 +4,7 @@ OutputDir = "$RootDir$/Output"
 
 command=Predict
 
-deviceId=-1                            
+deviceId=-1
 FeatureDimension=1
 
 Predict=[
