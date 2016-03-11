@@ -610,10 +610,7 @@ $(OBJDIR)/%.o : %.cpp Makefile
 	@mkdir -p $(dir $@)
 	$(CXX) -c $< -o $@ $(COMMON_FLAGS) $(CPPFLAGS) $(CXXFLAGS) $(INCLUDEPATH:%=-I%) -MD -MP -MF ${@:.o=.d}
 
-.PHONY: force clean buildall all
-
-force:	$(BUILDINFO)
-
+.PHONY: $(BUILDINFO) clean buildall all
 
 clean:
 	@echo $(SEPARATOR)
