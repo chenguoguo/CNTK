@@ -76,6 +76,7 @@ enum ElementWiseOperator
     opNegate,
     opNot,
     opAbs,
+    opReciprocal,
     opSigmoid,
     opTanh,
     opSqr,
@@ -131,6 +132,7 @@ enum ElementWiseOperator
     Macro(Negate);            \
     Macro(Not);               \
     Macro(Abs);               \
+    Macro(Reciprocal)         \
     Macro(Sigmoid);           \
     Macro(Tanh);              \
     Macro(Sqr);               \
