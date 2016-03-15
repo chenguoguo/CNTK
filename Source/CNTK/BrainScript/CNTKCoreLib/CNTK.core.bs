@@ -72,6 +72,7 @@ CrossEntropyWithSoftmax(labelVectorSequence, outProbVectorSequence, tag='') = ne
 DiagTimes(diagonalMatrixAsColumnVector, matrix, tag='') = new ComputationNode [ operation = 'DiagTimes' ; inputs = (diagonalMatrixAsColumnVector : matrix) /*plus the function args*/ ]
 Dropout(activationVectorSequence, tag='') = new ComputationNode [ operation = 'Dropout' ; inputs = activationVectorSequence /*plus the function args*/ ]
 ElementTimes(aMatrix, anotherMatrix, tag='') = new ComputationNode [ operation = 'ElementTimes' ; inputs = (aMatrix : anotherMatrix) /*plus the function args*/ ]
+ElementDivide(aMatrix, anotherMatrix, tag='') = ElementTimes(aMatrix, Reciprocal(anotherMatrix))
 ErrorPrediction(labelVectorSequence, outVectorSequence, tag='') = new ComputationNode [ operation = 'ErrorPrediction' ; inputs = (labelVectorSequence : outVectorSequence) /*plus the function args*/ ]
 Exp(x, tag='') = new ComputationNode [ operation = 'Exp' ; inputs = x /*plus the function args*/ ]
 GMMLogLikelihood(unnormalizedPriorVector, meansAsRows, logStdDevAsRows, dataVectorSequence, tag='') = new ComputationNode [ operation = 'GMMLogLikelihood' ; inputs = (unnormalizedPriorVector : meansAsRows : logStdDevAsRows : dataVectorSequence) /*plus the function args*/ ]
