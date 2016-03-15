@@ -132,7 +132,7 @@ enum ElementWiseOperator
     Macro(Negate);            \
     Macro(Not);               \
     Macro(Abs);               \
-    Macro(Reciprocal)         \
+    Macro(Reciprocal);        \
     Macro(Sigmoid);           \
     Macro(Tanh);              \
     Macro(Sqr);               \
