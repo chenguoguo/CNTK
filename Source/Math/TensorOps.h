@@ -202,6 +202,7 @@ DefUnaryOp(Exp, exp_(a));
 DefUnaryOp(Log, ClippedLog(a));
 DefUnaryOp(LinearRectifier, a > 0 ? a : 0);
 DefUnaryOp(Cosine, cos_(a));
+DefUnaryOp(Reciprocal, a == 0 ? 0 : 1 / a);
 #pragma pop_macro("DefUnaryOp")
 
 #pragma push_macro("DefBinaryOp")
@@ -236,6 +237,7 @@ DefBinaryOp(ElementwiseProductWithLinearRectifierDerivativeFromOutput, b > 0 ? a
 DefBinaryOp(ElementwiseProductWithLogDerivativeFromOutput, a* exp_(-b));
 DefBinaryOp(ElementwiseProductWithCosDerivative, a * -sin_(b)); // note: b = input for cos()
 DefBinaryOp(ElementwiseProductWithAbsDerivative, a * Sgn(b)); // note: b = input for abs()
+DefBinaryOp(ElementwiseProductWithReciprocalDerivative, a * b * (-b)); // b = output
 DefBinaryOp(SqrOfDifference, Sqr(a - b));
 //DefBinaryOp(Index, IndexElement(a, b, i));  // note: this one uses the third argument
 
