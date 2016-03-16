@@ -55,6 +55,9 @@
     <ClInclude Include="SequenceModePacker.h">
       <Filter>Packers</Filter>
     </ClInclude>
+    <ClInclude Include="Packer.h">
+      <Filter>Interfaces</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="NoRandomizer.cpp">

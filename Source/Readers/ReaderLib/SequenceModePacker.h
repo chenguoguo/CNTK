@@ -8,37 +8,16 @@
 #include "Reader.h"
 #include "MemoryProvider.h"
 #include "Transformer.h"
+#include "Packer.h"
 
 namespace Microsoft { namespace MSR { namespace CNTK {
 
 // Represents a sequence
-struct SequenceWrapper
-{
-    std::vector<SequenceDataPtr> m_dataPerStream;
-    size_t m_maxNumberOfSamples;
-
-    SequenceWrapper(const std::vector<SequenceDataPtr>& dataPerStream)
-        : m_dataPerStream(dataPerStream), m_maxNumberOfSamples(0)
-    {
-        for (size_t i = 0; i < m_dataPerStream.size(); ++i)
-        {
-            if (m_dataPerStream[i]->m_numberOfSamples > m_maxNumberOfSamples)
-            {
-                m_maxNumberOfSamples = m_dataPerStream[i]->m_numberOfSamples;
-            }
-        }
-    }
-
-    size_t GetMaxNumberOfSamples() const
-    {
-        return m_maxNumberOfSamples;
-    }
-};
-
+struct SequenceWrapper;
 typedef std::shared_ptr<SequenceWrapper> SequenceWrapperPtr;
 
 // A sample packer that densely packs samples in parallel for GPU consumptions.
-class SequenceModePacker
+class SequenceModePacker : public Packer
 {
 public:
     SequenceModePacker(
@@ -48,7 +27,7 @@ public:
         size_t parallelNumberOfSequences,
         const std::vector<StreamDescriptionPtr>& streams);
 
-    Minibatch ReadMinibatch();
+    virtual Minibatch ReadMinibatch() override;
 
 private:
     std::shared_ptr<char> AllocateBuffer(size_t numElements, size_t elementSize);
