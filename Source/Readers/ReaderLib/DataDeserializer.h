@@ -42,13 +42,14 @@ typedef std::shared_ptr<SequenceDescription> SequenceDescriptionPtr;
 // data deserializer or transformer can provide provides.
 struct SequenceDataBase
 {
-    SequenceDataBase() : m_data(nullptr) { }
+    SequenceDataBase() : m_data(nullptr), m_numberOfSamples(0) { }
     virtual ~SequenceDataBase() = default;
 
     ChunkPtr m_chunk;
     // A non-owned pointer. The actual size is provided for particular sequences,
     // i.e. see DenseSequenceData, or SparseSequenceData.
     void* m_data;
+    size_t m_numberOfSamples;      // Number of samples in the sequence
 };
 typedef std::shared_ptr<SequenceDataBase> SequenceDataPtr;
 
@@ -58,10 +59,7 @@ typedef std::shared_ptr<SequenceDataBase> SequenceDataPtr;
 // All samples in the sequence should have the same layout.
 struct DenseSequenceData : SequenceDataBase
 {
-    DenseSequenceData() : m_numberOfSamples(0) { }
-
     TensorShapePtr m_sampleLayout; // Sample layout, can be shared by several sequences.
-    size_t m_numberOfSamples;      // Number of samples in the sequence
 };
 typedef std::shared_ptr<DenseSequenceData> DenseSequenceDataPtr;
 

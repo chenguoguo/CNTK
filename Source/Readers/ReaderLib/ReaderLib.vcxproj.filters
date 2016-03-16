@@ -52,6 +52,9 @@
     <ClInclude Include="StringToIdMap.h">
       <Filter>Utils</Filter>
     </ClInclude>
+    <ClInclude Include="SequenceModePacker.h">
+      <Filter>Packers</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="NoRandomizer.cpp">
@@ -74,6 +77,9 @@
     </ClCompile>
     <ClCompile Include="BlockRandomizer.cpp">
       <Filter>Randomizers</Filter>
+    </ClCompile>
+    <ClCompile Include="SequenceModePacker.cpp">
+      <Filter>Packers</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
