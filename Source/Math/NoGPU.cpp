@@ -723,8 +723,10 @@ DeviceBoundNumber<ElemType>::~DeviceBoundNumber()
 
 #pragma region Helper functions
 
+/*
 template <class ElemType>
 void GPUMatrix<ElemType>::SetDevice(DEVICEID_TYPE deviceId){};
+*/
 
 // PrepareDevice - Setup the correct cuda context for an operation
 // deviceId - the device on which the operation will take place
