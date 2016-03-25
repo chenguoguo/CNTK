@@ -8,6 +8,27 @@
 
 namespace Microsoft { namespace MSR { namespace CNTK {
 
+// If the Tracing flag is set, print out a timestamp with no new line at the end
+#define PREPENDTS(stream) \
+    do \
+    { \
+        if (ProgressTracing::GetTracingFlag()) \
+        { \
+           std::time_t tt = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now()); \
+           char mbstr[30]; \
+           if (std::strftime(mbstr, sizeof(mbstr), "%m/%d/%Y %T", std::localtime(&tt))) \
+               fprintf(stream, "%s: ", mbstr);  \
+        } \
+    } while(0)
+
+// Print out a log message.  If the Tracing flag is set, prepend with a timestamp
+#define LOGPRINTF(stream, ...) \
+    do \
+    { \
+        PREPENDTS(stream); \
+        fprintf(stream, __VA_ARGS__); \
+    } while(0)
+
 // ---------------------------------------------------------------------------
 // ProgressTracing -- static helper class for logging a progress indicator
 //
