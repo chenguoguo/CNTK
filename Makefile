@@ -701,6 +701,12 @@ $(OBJDIR)/%.o : %.cpp Makefile
 	@mkdir -p $(dir $@)
 	$(CXX) -c $< -o $@ $(COMMON_FLAGS) $(CPPFLAGS) $(CXXFLAGS) $(INCLUDEPATH:%=-I%) -MD -MP -MF ${@:.o=.d}
 
+$(OBJDIR)/%.o : %.c Makefile
+	@echo $(SEPARATOR)
+	@echo creating $@ for $(ARCH) with build type $(BUILDTYPE)
+	@mkdir -p $(dir $@)
+	$(CC) -c $< -o $@ $(CPPFLAGS) $(CFLAGS) $(INCLUDEPATH:%=-I%) -MD -MP -MF ${@:.o=.d}
+
 .PHONY: clean buildall all
 
 clean:
