@@ -2,7 +2,7 @@ dataDir: ../../Data
 tags:
      # TODO run on more SKUs
      # running unconditionally on every Nightly job in 'L' leg
-     - nightly-l (build_sku == 'gpu') and (os=='Linux')
+     - nightly-l (build_sku == 'gpu') and (os=='linux')
 
 testCases:
   CNTK Run must be completed:
