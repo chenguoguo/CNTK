@@ -29,6 +29,8 @@
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <PlatformToolset>v120</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
+    <UseDebugLibraries>$(DebugBuild)</UseDebugLibraries>
+    <WholeProgramOptimization>$(ReleaseBuild)</WholeProgramOptimization>
   </PropertyGroup>
   <PropertyGroup>
     <HasOpenCV>false</HasOpenCV>
@@ -36,18 +38,16 @@
     <UseZip>false</UseZip>
     <UseZip Condition="Exists('$(ZLIB_PATH)')">true</UseZip>
   </PropertyGroup>
+  <PropertyGroup Condition="$(HasOpenCV)">
+    <OpenCVLib>opencv_world300.lib</OpenCVLib>
+    <OpenCVInclude>$(OPENCV_PATH)\include</OpenCVInclude>
+    <OpenCVLibPath>$(OPENCV_PATH)\x64\vc12\lib</OpenCVLibPath>
+  </PropertyGroup>
   <PropertyGroup Condition="$(UseZip)">
-    <ZipInclude>$(ZLIB_PATH)\include;$(ZLIB_PATH)\lib\libzip\include;</ZipInclude>
+    <ZipInclude>$(ZLIB_PATH)\include;$(ZLIB_PATH)\lib\libzip\include</ZipInclude>
     <ZipDefine>USE_ZIP</ZipDefine>
-    <ZipLibPath>$(ZLIB_PATH)\lib;</ZipLibPath>
-    <ZipLibs>zlib.lib;zip.lib;</ZipLibs>
-  </PropertyGroup>
-  <PropertyGroup Condition="$(DebugBuild)" Label="Configuration">
-    <UseDebugLibraries>true</UseDebugLibraries>
-  </PropertyGroup>
-  <PropertyGroup Condition="$(ReleaseBuild)" Label="Configuration">
-    <UseDebugLibraries>false</UseDebugLibraries>
-    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <ZipLibPath>$(ZLIB_PATH)\lib</ZipLibPath>
+    <ZipLibs>zlib.lib;zip.lib</ZipLibs>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="PropertySheets">
@@ -55,15 +55,7 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup>
-    <IncludePath>..\..\common\include;..\..\math;$(OPENCV_PATH)\include;$(ZipInclude);$(IncludePath);</IncludePath>
-    <LibraryPath>$(SolutionDir)$(Platform)\$(Configuration);$(OPENCV_PATH)\x64\vc12\lib;$(ZipLibPath);$(LibraryPath);</LibraryPath>
-    <OpenCVLib Condition="$(HasOpenCV)">opencv_world300.lib</OpenCVLib>
-  </PropertyGroup>
-  <PropertyGroup Condition="$(DebugBuild)">
-    <LinkIncremental>true</LinkIncremental>
-  </PropertyGroup>
-  <PropertyGroup Condition="$(ReleaseBuild)">
-    <LinkIncremental>false</LinkIncremental>
+    <LinkIncremental>$(DebugBuild)</LinkIncremental>
   </PropertyGroup>
   <ItemDefinitionGroup>
     <ClCompile>
@@ -73,11 +65,13 @@
       <SDLCheck>true</SDLCheck>
       <TreatWarningAsError>true</TreatWarningAsError>
       <OpenMPSupport>true</OpenMPSupport>
+      <AdditionalIncludeDirectories>..\..\common\include;..\..\math;$(OpenCVInclude);$(ZipInclude);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalDependencies>ReaderLib.lib;Math.lib;$(OpenCVLib);$(ZipLibs);%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(OpenCVLibPath);$(ZipLibPath);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
     <PostBuildEvent>
       <Command>if "$(HasOpenCv)" == "true" xcopy /I /D /Y "$(OPENCV_PATH)\x64\vc12\bin\opencv_world300.dll" "$(TargetDir)"
@@ -91,7 +85,7 @@ if "$(UseZip)" == "true" if exist "$(ZLIB_PATH)\bin\zlib1.dll" (xcopy /I /D /Y "
     <ClCompile>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>../ReaderLib</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../ReaderLib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="$(ReleaseBuild)">
@@ -101,7 +95,7 @@ if "$(UseZip)" == "true" if exist "$(ZLIB_PATH)\bin\zlib1.dll" (xcopy /I /D /Y "
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalOptions>/d2Zi+ %(AdditionalOptions)</AdditionalOptions>
-      <AdditionalIncludeDirectories>../ReaderLib</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../ReaderLib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
