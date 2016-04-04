@@ -54,13 +54,9 @@
   </PropertyGroup>
   <PropertyGroup Condition="$(ReleaseBuild)">
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>..\SGDLib;..\ComputationNetworkLib;..\SequenceTrainingLib;..\Math;..\Common\Include;..\CNTK\BrainScript;..\ActionsLib;$(MSMPI_INC);$(CUDA_PATH)\include;$(VCInstallDir)include;$(WindowsSDK_IncludePath)</IncludePath>
-    <LibraryPath>..\ComputationNetworkLib;..\Math;$(MSMPI_LIB64);$(CUDA_PATH)\lib\$(Platform);$(VCInstallDir)lib\amd64;$(WindowsSDK_LibraryPath_x64);$(Platform);$(SolutionDir)$(Platform)\$(Configuration)\</LibraryPath>
+    <IncludePath>..\SGDLib;..\ComputationNetworkLib;..\SequenceTrainingLib;..\Math;..\Common\Include;..\CNTK\BrainScript;..\ActionsLib;$(MSMPI_INC);$(VCInstallDir)include;$(WindowsSDK_IncludePath)</IncludePath>
+    <LibraryPath>..\ComputationNetworkLib;..\Math;$(MSMPI_LIB64);$(VCInstallDir)lib\amd64;$(WindowsSDK_LibraryPath_x64);$(Platform);$(SolutionDir)$(Platform)\$(Configuration)\</LibraryPath>
     <TargetName>EvalDll</TargetName>
-  </PropertyGroup>
-  <PropertyGroup Condition="$(GpuBuild)">
-    <IncludePath>$(IncludePath);$(CUDA_PATH)\include</IncludePath>
-    <LibraryPath>$(LibraryPath);$(CUDA_PATH)\lib\$(Platform)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="$(DebugBuild)">
     <ClCompile>

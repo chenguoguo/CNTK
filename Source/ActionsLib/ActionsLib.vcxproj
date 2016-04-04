@@ -58,10 +58,6 @@
     <ExecutablePath>$(ExecutablePath)</ExecutablePath>
     <PreBuildEventUseInBuild>false</PreBuildEventUseInBuild>
   </PropertyGroup>
-  <PropertyGroup Condition="$(GpuBuild)">
-    <IncludePath>$(IncludePath);$(CUDA_PATH)\include;</IncludePath>
-    <LibraryPath>$(LibraryPath);$(CUDA_PATH)\lib\$(Platform)</LibraryPath>
-  </PropertyGroup>
   <ItemDefinitionGroup Condition="$(DebugBuild)">
     <ClCompile>
       <PrecompiledHeader>

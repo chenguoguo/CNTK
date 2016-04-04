@@ -58,10 +58,6 @@
   <PropertyGroup Condition="$(DebugBuild)">
     <LinkIncremental>true</LinkIncremental>
   </PropertyGroup>
-  <PropertyGroup Condition="$(GpuBuild)">
-    <IncludePath>$(IncludePath);$(CUDA_PATH)\include</IncludePath>
-    <LibraryPath>$(LibraryPaht);$(CUDA_PATH)\lib\$(Platform)</LibraryPath>
-  </PropertyGroup>
   <ItemDefinitionGroup Condition="$(DebugBuild)">
     <ClCompile>
       <PrecompiledHeader>
