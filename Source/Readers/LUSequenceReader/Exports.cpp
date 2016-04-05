@@ -24,8 +24,16 @@ void EnableUTF8Support()
 #ifdef _MSC_VER
     locale::global(locale(locale::empty(), new codecvt_utf8<wchar_t>));
 #else
-    // BUGBUG: the following assumes that the user-preferred locale supports UTF-8
-    locale::global(locale(""));
+    try 
+    {
+        locale::global(locale("C.UTF-8")); 
+    }
+    catch(...) 
+    {
+        // "C.UTF-8" is not available, revert to the default user-preferred locale.
+        locale::global(locale("")); 
+    }
+    
 #endif
 }
 
