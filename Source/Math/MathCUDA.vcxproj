@@ -50,7 +50,7 @@
   <PropertyGroup>
     <CudaToolkitCustomDir>$(CudaPath)</CudaToolkitCustomDir>
     <IncludePath>..\Common\include;$(ACML_PATH)\include;$(CudaInclude);$(CUB_PATH);$(CuDnnIncPath);$(IncludePath)</IncludePath>
-    <LibraryPath>$(SolutionDir)$(Platform)\$(Configuration);$(ACML_PATH)\lib;$(CudaLibPath);$(CuDnnLibPath);$(LibraryPath)</LibraryPath>
+    <LibraryPath>$(OutDir);$(ACML_PATH)\lib;$(CudaLibPath);$(CuDnnLibPath);$(LibraryPath)</LibraryPath>
     <IntDir>$(IntDir)\MathCUDA\</IntDir>
   </PropertyGroup>
   <ImportGroup Label="ExtensionSettings">

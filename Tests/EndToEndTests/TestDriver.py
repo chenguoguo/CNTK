@@ -1,3 +1,4 @@
+# TODO update Windows binary path
 #!/usr/bin/env python
 # ----------------------------------------------------------
 # Copyright (c) Microsoft Corporation.  All rights reserved.
