@@ -42,7 +42,7 @@ void ComputationNetwork::ForwardProp(const ComputationNodeBasePtr rootNode)
     // traverse all nodes in the pre-determined evaluation order
 	if (m_enableSublinearMemory) {
 		shared_ptr<FlowControlNode> flowControlNode = dynamic_pointer_cast<FlowControlNode>(GetNestedNetwork(rootNode));
-		if (rootNode->GetName() == wstring(L"Err")) {
+        if (rootNode->GetName() == wstring(L"Err") || rootNode->GetName() == wstring(L"net.err")) {
 			flowControlNode->SetForwardMethod(FlowControlNode::ForwardMethod::FORWARD_KEYRECORD);
 			m_cacheNetwork = flowControlNode;
 		}

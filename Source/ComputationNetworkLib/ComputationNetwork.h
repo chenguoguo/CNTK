@@ -1046,7 +1046,7 @@ private:
 
 	shared_ptr<FlowControlNode> m_cacheNetwork;
 
-	bool m_enableSublinearMemory;
+	bool m_enableSublinearMemory = false;
 };
 typedef ComputationNetwork::ComputationNetworkPtr ComputationNetworkPtr;
 

@@ -62,6 +62,11 @@ public:
 
     DISABLE_COPY_AND_MOVE(ConvolutionEngine);
 
+    void SetmMaxTempMemSizeInSamples(const size_t maxTempMemSizeInSamples)
+    {
+        m_maxTempMemSizeInSamples = maxTempMemSizeInSamples;
+    }
+
 protected:
     ConvolutionEngine(ConvolveGeometryPtr geometry, DEVICEID_TYPE deviceId, ImageLayoutKind imageLayout, size_t maxTempMemSizeInSamples, PoolKind poolKind)
         : m_geometry(geometry), m_deviceId(deviceId), m_imageLayout(imageLayout), m_maxTempMemSizeInSamples(maxTempMemSizeInSamples), m_poolKind(poolKind)
