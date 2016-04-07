@@ -15,6 +15,13 @@
 #include <list>
 #include <memory>
 
+#include <iostream>
+#include <cuda_runtime.h>
+#include <cusparse.h>
+#include <cublas_v2.h>
+
+using namespace std;
+
 namespace Microsoft { namespace MSR { namespace CNTK {
 
 // This header collects special-purpose nodes.
@@ -706,13 +713,16 @@ public:
 
     virtual void BackpropToNonLooping(size_t inputIndex) override
     {
-        FrameRange fr(Input(0)->GetMBLayout());
         if (inputIndex == 0)
-            LogicError("DummyCriterionNode: Gradients with respect to objective features are not necessary, not implemented.\n");
+            //LogicError("DummyCriterionNode: Gradients with respect to objective features are not necessary, not implemented.\n");
+            return;
         else if (inputIndex == 1)
-            LogicError("DummyCriterionNode: Gradients with respect to derivative features are not necessary, not implemented.\n");
+            //LogicError("DummyCriterionNode: Gradients with respect to derivative features are not necessary, not implemented.\n");
+            return;
         else if (inputIndex == 2)
         {
+            /*FrameRange fr(Input(0)->GetMBLayout());*/
+            FrameRange fr(Input(2)->GetMBLayout());
             // predictionsGradient += userSuppliedGradient * scalarGradientFromTop
             auto gradient = Input(2)->GradientFor(fr);
             Matrix<ElemType>::Multiply1x1AndWeightedAdd(+1.0f, /*gradient from top:*/Gradient() /*1x1*/, /*user-supplied gradient:*/Input(1)->ValueFor(fr), 1.0f, /*add to:*/gradient);
@@ -739,12 +749,19 @@ public:
         Base::Validate(isFinalValidationPass);
         m_pMBLayout = nullptr; // this node does not hold mini-batch data
 
-        if (Input(0)->OperationName() != L"InputValue")
+        /*if (Input(0)->OperationName() != L"InputValue")
             LogicError("DummyCriterionNode criterion requires the first input to be computed objectives.");
         if (Input(1)->OperationName() != L"InputValue")
-            LogicError("DummyCriterionNode criterion requires the second input to be computed derivatives.");
+            LogicError("DummyCriterionNode criterion requires the second input to be computed derivatives.");*/
         if (isFinalValidationPass)
         {
+            auto r0 = Input(0)->GetSampleMatrixNumRows();
+            auto r1 = Input(1)->GetSampleMatrixNumRows();
+            auto r2 = Input(2)->GetSampleMatrixNumRows();
+            auto c0 = Input(0)->GetSampleMatrixNumCols();
+            auto c1 = Input(1)->GetSampleMatrixNumCols();
+            auto c2 = Input(2)->GetSampleMatrixNumCols();
+            fprintf(stderr, "%d\n", r0 + r1 + r2 + c0 + c1 + c2);
             if (Input(0)->GetSampleMatrixNumRows() == 0
                 || Input(1)->GetSampleMatrixNumRows() == 0
                 || Input(2)->GetSampleMatrixNumRows() == 0)
@@ -762,4 +779,284 @@ public:
 template class DummyCriterionNode<float>;
 template class DummyCriterionNode<double>;
 
+// -----------------------------------------------------------------------
+// LatticeFreeMMINode (labels, prediction)
+// calculates: -sum(left_i * log(softmax_i(right)))
+// -----------------------------------------------------------------------
+
+template <class ElemType>
+class LatticeFreeMMINode : public ComputationNodeNonLooping /*ComputationNode*/<ElemType>, public NumInputs<4>
+{
+    typedef ComputationNodeNonLooping<ElemType> Base;
+    UsingComputationNodeMembersBoilerplate;
+    static const std::wstring TypeName()
+    {
+        return L"LatticeFreeMMI";
+    }
+
+public:
+    //DeclareConstructorFromConfigWithNumInputs(LatticeFreeMMINode);
+    LatticeFreeMMINode(DEVICEID_TYPE deviceId, const wstring& name)
+        : Base(deviceId, name)
+    {
+    }
+
+    LatticeFreeMMINode(const ScriptableObjects::IConfigRecordPtr configp)
+        : LatticeFreeMMINode(configp->Get(L"deviceId"), L"<placeholder>")
+    {
+        AttachInputsFromConfig(configp, this->GetExpectedNumInputs());
+    }
+
+    virtual void BackpropToNonLooping(size_t inputIndex) override
+    {
+    }
+
+    virtual bool OutputUsedInComputingInputNodesGradients() const override
+    {
+        return false;
+    }
+
+    virtual void UpdateFunctionMBSize() override
+    {
+        m_softmaxOfRight->Resize(Input(1)->Value());
+    }
+
+    void SaveMatrix(wchar_t *fileName, shared_ptr<Matrix<ElemType>> m)
+    {
+        FILE *fin = _wfopen(fileName, L"w");
+        fprintf(fin, "%d %d\n", m->GetNumRows(), m->GetNumCols());
+        for (int i = 0; i < m->GetNumRows(); i++){
+            for (int j = 0; j < m->GetNumCols(); j++){
+                fprintf(fin, "%e\n", m->GetValue(i, j));
+            }
+        }
+        fclose(fin);
+    }
+
+    virtual void /*ComputationNodeNonLooping::*/ ForwardPropNonLooping() override // -sum(left_i * log(softmax_i(right)))
+    {
+        if (!m_MatrixInitialized)
+        {
+            m_tmap = make_shared<Matrix<ElemType>>(Input(2)->ValueAsMatrix(), m_deviceId);
+            m_smap = make_shared<Matrix<ElemType>>(Input(3)->ValueAsMatrix(), m_deviceId);
+            m_tmap_transpose = make_shared<Matrix<ElemType>>(m_tmap->Transpose(), m_deviceId);
+            m_smap_transpose = make_shared<Matrix<ElemType>>(m_smap->Transpose(), m_deviceId);
+            m_MatrixInitialized = true;
+        }
+
+        FrameRange fr(Input(0)->GetMBLayout());
+        // first compute the softmax (column-wise)
+        // Note that we need both log and non-log for gradient computation.
+        m_softmaxOfRight->AssignLogSoftmaxOf(Input(1)->ValueFor(fr), true);
+        m_softmaxOfRight->InplaceExp();
+        
+        int nf = m_softmaxOfRight->GetNumCols();
+        int nstates = m_tmap->GetNumCols();
+
+        //SaveMatrix(L"D:\\temp\\cntk_p_new.txt", m_softmaxOfRight);
+        
+        ElemType* curr_alpha = new ElemType[nstates]();
+        curr_alpha[0] = 1.0;
+        m_curr_alpha->SetValue(nstates, 1, m_deviceId, curr_alpha);
+        m_next_alpha->Resize(nstates, 1);
+        m_alphas->Resize(nstates, nf + 1);
+        m_obsp->Resize(nstates, nf + 1);
+
+        ElemType* obsp = new ElemType[nstates * (nf+1)]();
+        for (int i = 0; i < nf + 1; i++)
+        {
+            obsp[i*nstates] = (ElemType)1.0;
+            obsp[(i + 1)*(nstates)-1] = (ElemType)1.0;
+        }
+        m_obsp->SetValue(nstates, nf + 1, m_deviceId, obsp);
+        delete[] obsp;
+
+        auto probpart = m_obsp->ColumnSlice(0, nf);
+        Matrix<ElemType>::MultiplyAndWeightedAdd((ElemType)1.0, *m_smap_transpose, false, *m_softmaxOfRight, false, (ElemType)1.0, probpart);
+
+        //cout << "m_tmap sum:" << m_tmap->SumOfElements() << endl;
+        //cout << "m_smap sum:" << m_smap->SumOfElements() << endl;
+        //cout << "m_softmaxOfRight sum:" << m_softmaxOfRight->SumOfElements() << endl;
+        //cout << "m_obsp sum:" << m_obsp->SumOfElements() << endl;
+        //cout << "m_curr_alpha sum:" << m_curr_alpha->SumOfElements() << endl;
+
+        const int rescale_interval = 1; // rescale every this many frames
+        ElemType scale = 1.0;
+#ifdef _DEBUG
+        vector<ElemType> sumfwscale;
+        ElemType fwlogscale = 0.0, bwlogscale = 0.0;
+        clock_t currtime = clock();
+#endif
+        for (int f = 0; f < nf + 1; f++) 
+        {
+            scale = (ElemType)1.0 / scale;
+
+#ifdef _DEBUG
+            fwlogscale -= log(scale);
+            sumfwscale.push_back(fwlogscale);
+#endif
+            Matrix<ElemType>::MultiplyAndWeightedAdd(scale, *m_tmap_transpose, false, *m_curr_alpha, false, (ElemType)0.0, *m_next_alpha);
+            
+            m_curr_alpha->AssignElementProductOf(*m_next_alpha, m_obsp->ColumnSlice(f, 1));
+
+            scale = (f % rescale_interval) == 0 ? m_curr_alpha->MatrixNormInf() : (ElemType)1.0;
+            m_alphas->SetColumnSlice(*m_curr_alpha, f, 1);
+        }
+
+#ifdef _DEBUG
+        ElemType fwscore = m_curr_alpha->GetValue(nstates - 1, 0);
+        ElemType logfwscore = log(fwscore) + fwlogscale;
+        cout << "log forward score: " << logfwscore << endl;
+#endif
+        curr_alpha[0] = 0.0;
+        curr_alpha[nstates - 1] = 1.0;
+        m_curr_alpha->SetValue(nstates, 1, m_deviceId, curr_alpha);
+        scale = 1.0;
+        ElemType absum;
+
+        for (int f = nf; f >= 0; f--) {  // not nf-1 because of transitions to final state at the end of the observation sequence
+            // combine forward, backward probabilities
+            auto column = m_alphas->ColumnSlice(f, 1);
+            column.ElementMultiplyWith(*m_curr_alpha);
+            absum = (ElemType)1.0 / column.SumOfElements();
+
+#ifdef _DEBUG
+            ElemType lfp = -log(absum) + bwlogscale + sumfwscale[f];
+            assert(lfp / logfwscore < 1.01 && lfp / logfwscore > 0.99);  // total path scores should remain constant
+#endif
+
+            Matrix<ElemType>::Scale(absum, column);
+
+            m_next_alpha->AssignElementProductOf(*m_curr_alpha, m_obsp->ColumnSlice(f, 1));
+
+            // apply the transition matrix and scale by the maximum of the previous frame
+            scale = (ElemType)1.0 / scale;
+
+#ifdef _DEBUG
+            bwlogscale -= log(scale);
+#endif
+            Matrix<ElemType>::MultiplyAndWeightedAdd(scale, *m_tmap, false, *m_next_alpha, false, (ElemType)0.0, *m_curr_alpha);
+            scale = (f % rescale_interval) == 0 ? m_curr_alpha->MatrixNormInf() : (ElemType)1.0;
+        }
+
+        m_posteriors->Resize(m_smap->GetNumRows(), nf);
+        m_posteriors->AssignProductOf(*m_smap, false, m_alphas->ColumnSlice(0, nf), false);
+        
+#ifdef _DEBUG
+
+        // get the total backward probability
+        // verify it matches total forward probability
+        ElemType bwscore = m_curr_alpha->GetValue(0, 0);
+        ElemType logbwscore = log(bwscore) + bwlogscale;
+        cout << "log backward score: " << logbwscore << endl;
+
+        // verify the posterior sum
+        ElemType tp = m_posteriors->SumOfElements();
+        assert(tp / nf > 0.99 && tp / nf < 1.01);
+
+        currtime = clock() - currtime;
+        float secs = float(currtime) / CLOCKS_PER_SEC;
+        printf("%f seconds for %i frames\n", secs, nf);
+        float xRT = (100 * secs) / nf;
+        printf("%f xRT\n", xRT);
+#endif
+        
+        delete[] curr_alpha;
+        Value().AssignDifferenceOf(*m_posteriors, Input(0)->ValueFor(fr));
+
+        //Value().AssignDifferenceOf(*m_softmaxOfRight, Input(0)->ValueFor(fr));
+        
+        //Matrix<ElemType>::AddScaledDifference(1.0, *m_softmaxOfRight, Input(0)->ValueFor(fr), Value());
+        //(*m_softmaxOfRight).Print("LatticeFreeMMINode", 0, 2, 0, 2);
+        //Input(0)->ValueFor(fr).Print("LatticeFreeMMINode", 0, 2, 0, 2);
+        //Value().Print("LatticeFreeMMINode", 0, 2, 0, 2);
+        /*Value().AssignInnerProductOfMatrices(Input(0)->MaskedValueFor(fr), *m_logSoftmaxOfRight);
+        Value() *= -1;*/
+#if NANCHECK
+        Value().HasNan("LatticeFreeMMI");
+#endif
+#if DUMPOUTPUT
+        Value().Print("LatticeFreeMMINode");
+#endif
+
+    }
+
+    virtual void /*ComputationNodeBase::*/ Validate(bool isFinalValidationPass) override
+    {
+        /*ValidateBinaryReduce(isFinalValidationPass);*/
+        Base::Validate(isFinalValidationPass);
+        InferMBLayoutFromInputsForStandardCase(isFinalValidationPass);
+        let shape0 = GetInputSampleLayout(1);
+        SmallVector<size_t> dims = shape0.GetDims();
+        SetDims(TensorShape(dims), HasMBLayout());
+        if (isFinalValidationPass)
+        {
+            auto r0 = Input(0)->GetSampleMatrixNumRows();
+            auto r2 = Input(2)->ValueAsMatrix().GetNumRows();
+            auto r3 = Input(3)->ValueAsMatrix().GetNumRows();
+            auto c2 = Input(2)->ValueAsMatrix().GetNumCols();
+            auto c3 = Input(3)->ValueAsMatrix().GetNumCols();
+            if (r0 != r3 || c2 != r2 || c2 != c3)
+                LogicError("The Matrix dimension in the LatticeFreeMMINode operation does not match.");
+        }
+    }
+
+    virtual void CopyTo(ComputationNodeBasePtr nodeP, const std::wstring& newName, const CopyNodeFlags flags) const override
+    {
+        Base::CopyTo(nodeP, newName, flags);
+        if (flags & CopyNodeFlags::copyNodeValue)
+        {
+            auto node = dynamic_pointer_cast<LatticeFreeMMINode<ElemType>>(nodeP);
+            node->m_softmaxOfRight->SetValue(*m_softmaxOfRight);
+        }
+    }
+
+    // request matrices needed to do node function value evaluation
+    virtual void RequestMatricesBeforeForwardProp(MatrixPool& matrixPool)
+    {
+        Base::RequestMatricesBeforeForwardProp(matrixPool);
+        RequestMatrixFromPool(m_softmaxOfRight, matrixPool);
+        RequestMatrixFromPool(m_curr_alpha, matrixPool);
+        RequestMatrixFromPool(m_next_alpha, matrixPool);
+        RequestMatrixFromPool(m_alphas, matrixPool);
+        RequestMatrixFromPool(m_obsp, matrixPool);
+        RequestMatrixFromPool(m_posteriors, matrixPool);
+    }
+
+    // request matrices needed to do node function value evaluation
+    virtual void ReleaseMatricesAfterBackprop(MatrixPool& matrixPool)
+    {
+        Base::ReleaseMatricesAfterBackprop(matrixPool);
+        ReleaseMatrixToPool(m_softmaxOfRight, matrixPool);
+        ReleaseMatrixToPool(m_curr_alpha, matrixPool);
+        ReleaseMatrixToPool(m_next_alpha, matrixPool);
+        ReleaseMatrixToPool(m_alphas, matrixPool);
+        ReleaseMatrixToPool(m_obsp, matrixPool);
+        ReleaseMatrixToPool(m_posteriors, matrixPool);
+    }
+
+protected:
+    bool m_MatrixInitialized = false;
+    shared_ptr<Matrix<ElemType>> m_tmap;
+    shared_ptr<Matrix<ElemType>> m_smap;
+    shared_ptr<Matrix<ElemType>> m_tmap_transpose;
+    shared_ptr<Matrix<ElemType>> m_smap_transpose;
+    shared_ptr<Matrix<ElemType>> m_softmaxOfRight;
+    shared_ptr<Matrix<ElemType>> m_curr_alpha;
+    shared_ptr<Matrix<ElemType>> m_next_alpha;
+    shared_ptr<Matrix<ElemType>> m_alphas;
+    shared_ptr<Matrix<ElemType>> m_obsp;
+    shared_ptr<Matrix<ElemType>> m_posteriors;
+};
+
+template class LatticeFreeMMINode<float>;
+template class LatticeFreeMMINode<double>;
+
+struct arc {
+    int source;
+    int destination;    // destination state
+    int statenum;  // the id of the arc
+    float lm_cost;  // from the graph
+    float logsp, logfp; // log of self and forward loop probabilities
+};
 } } }

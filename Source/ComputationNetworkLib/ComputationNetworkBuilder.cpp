@@ -60,6 +60,7 @@ static shared_ptr<ComputationNode<ElemType>> CreateStandardNode(const std::wstri
     else if (nodeType == OperationNameOf(HardmaxNode))                          return New<HardmaxNode<ElemType>>(forward<_Types>(_Args)...);
     else if (nodeType == OperationNameOf(InvStdDevNode))                        return New<InvStdDevNode<ElemType>>(forward<_Types>(_Args)...);
     else if (nodeType == OperationNameOf(KhatriRaoProductNode))                 return New<KhatriRaoProductNode<ElemType>>(forward<_Types>(_Args)...);
+    else if (nodeType == OperationNameOf(LatticeFreeMMINode))                   return New<LatticeFreeMMINode<ElemType>>(forward<_Types>(_Args)...);
     else if (nodeType == OperationNameOf(LogNode))                              return New<LogNode<ElemType>>(forward<_Types>(_Args)...);
     else if (nodeType == OperationNameOf(LogSoftmaxNode))                       return New<LogSoftmaxNode<ElemType>>(forward<_Types>(_Args)...);
     else if (nodeType == OperationNameOf(LookupTableNode))                      return New<LookupTableNode<ElemType>>(forward<_Types>(_Args)...);
@@ -388,6 +389,12 @@ template <class ElemType>
 shared_ptr<ComputationNode<ElemType>> ComputationNetworkBuilder<ElemType>::CrossEntropyWithSoftmax(const ComputationNodePtr label, const ComputationNodePtr prediction, const std::wstring nodeName)
 {
     return net.AddNodeToNetAndAttachInputs(New<CrossEntropyWithSoftmaxNode<ElemType>>(net.GetDeviceId(), nodeName), { label, prediction });
+}
+
+template <class ElemType>
+shared_ptr<ComputationNode<ElemType>> ComputationNetworkBuilder<ElemType>::LatticeFreeMMI(const ComputationNodePtr label, const ComputationNodePtr prediction, const ComputationNodePtr tmap, const ComputationNodePtr smap, const std::wstring nodeName)
+{
+    return net.AddNodeToNetAndAttachInputs(New<LatticeFreeMMINode<ElemType>>(net.GetDeviceId(), nodeName), { label, prediction, tmap, smap });
 }
 
 template <class ElemType>

@@ -9,6 +9,7 @@
 #include "TensorShape.h" // for SmallVector<>
 
 #include <string>
+#include <iostream>
 
 namespace Microsoft { namespace MSR { namespace CNTK {
 
@@ -24,14 +25,17 @@ template <class ElemType>
 void LearnableParameter<ElemType>::InitShape(const TensorShape& shape)
 {
     SetDims(shape, false);
-    UpdateFunctionValuesSize(); // this allocates the matrix
-    Value().SetValue(0); // TODO: invalidate instead
+    if (!m_isSparse)
+    {
+        UpdateFunctionValuesSize(); // this allocates the matrix
+        Value().SetValue(0); // TODO: invalidate instead
+    }
 }
 
 // constructor from config
 template <class ElemType>
 LearnableParameter<ElemType>::LearnableParameter(const ScriptableObjects::IConfigRecordPtr configp) :
-    LearnableParameter(configp->Get(L"deviceId"), L"<placeholder>", configp->Get(L"shape"))
+    LearnableParameter(configp->Get(L"deviceId"), L"<placeholder>", configp->Get(L"shape"), configp->Get(L"isSparse"), configp->Get(L"isSparse"))
 {
     // TODO: Change dimensions to take a generic tensor instead. That will be a (minor) breaking change that will require fix-ups when converting from NDL to BrainScript.
     AttachInputsFromConfig(configp, this->GetExpectedNumInputs());
@@ -57,6 +61,26 @@ LearnableParameter<ElemType>::LearnableParameter(const ScriptableObjects::IConfi
         if (initFromFilePath.empty())
             RuntimeError("initFromFilePath parameter must be provided when using \"fromFile\" initialization method");
         InitFromFile(initFromFilePath);
+    }
+    else if (initString == L"fromFst")
+    {
+        wstring fstFilePath = configp->Get(L"fstFilePath");
+        if (fstFilePath.empty())
+            RuntimeError("fstFilePath parameter must be provided when using \"fromFst\" initialization method");
+        wstring smapFilePath = configp->Get(L"smapFilePath");
+        if (smapFilePath.empty())
+            RuntimeError("smapFilePath parameter must be provided when using \"fromFst\" initialization method");
+        InitFromFst(fstFilePath, smapFilePath);
+    }
+    else if (initString == L"fromSmap")
+    {
+        wstring fstFilePath = configp->Get(L"fstFilePath");
+        if (fstFilePath.empty())
+            RuntimeError("fstFilePath parameter must be provided when using \"fromFst\" initialization method");
+        wstring smapFilePath = configp->Get(L"smapFilePath");
+        if (smapFilePath.empty())
+            RuntimeError("smapFilePath parameter must be provided when using \"fromFst\" initialization method");
+        InitFromSmap(fstFilePath, smapFilePath);
     }
     else if (initString == L"fromLiteral")
     {
@@ -112,6 +136,53 @@ void LearnableParameter<ElemType>::InitFromFile(const wstring& initFromFilePath)
     size_t numRows, numCols;
     auto array = File::LoadMatrixFromTextFile<ElemType>(initFromFilePath, numRows, numCols);
     InitFromArray(array, numRows, numCols);
+}
+
+// initialize by reading a matrix from a FST file
+template <class ElemType>
+void LearnableParameter<ElemType>::InitFromFst(const wstring& fstFilePath, const wstring& smapFilePath)
+{
+    map<string, int> idx4senone;
+    Read_senone_map(smapFilePath.c_str(), idx4senone);
+
+    int nstates, transM_nz, *transM_row, *transM_col;
+    ElemType *transM_val;
+
+    // sparse matrix for the mapping from state to senone
+    int nsenones, smap_nz, *smap_row, *smap_col;
+    ElemType *smap_val;
+
+    nsenones = (int)idx4senone.size();
+    auto input = LoadTfstFile(fstFilePath.c_str(), idx4senone);
+    Graph2matrix(input, transM_val, transM_row, transM_col, nstates, transM_nz, smap_val, smap_row, smap_col, smap_nz, nsenones, NULL);
+    
+    //Value().SwitchToMatrixType(SPARSE, matrixFormatSparseCSC, false);
+    //Value().SetMatrixFromCSCFormat(transM_col, transM_row, transM_val, transM_nz, nRows, nCols);
+    Value().SwitchToMatrixType(SPARSE, matrixFormatSparseCSR, false);
+    Value().SetMatrixFromCSRFormat(transM_row, transM_col, transM_val, transM_nz, nstates, nstates);
+}
+
+// initialize by reading a matrix from a Smap file
+template <class ElemType>
+void LearnableParameter<ElemType>::InitFromSmap(const wstring& fstFilePath, const wstring& smapFilePath)
+{
+    map<string, int> idx4senone;
+    Read_senone_map(smapFilePath.c_str(), idx4senone);
+
+    int nstates, transM_nz, *transM_row, *transM_col;
+    ElemType *transM_val;
+
+    // sparse matrix for the mapping from state to senone
+    int nsenones, smap_nz, *smap_row, *smap_col;
+    ElemType *smap_val;
+
+    nsenones = (int)idx4senone.size();
+
+    auto input = LoadTfstFile(fstFilePath.c_str(), idx4senone);
+    Graph2matrix(input, transM_val, transM_row, transM_col, nstates, transM_nz, smap_val, smap_row, smap_col, smap_nz, nsenones, NULL);
+
+    Value().SwitchToMatrixType(SPARSE, matrixFormatSparseCSR, false);
+    Value().SetMatrixFromCSRFormat(smap_row, smap_col, smap_val, smap_nz, nsenones, nstates);
 }
 
 // initialize by reading a matrix from a text file
@@ -289,4 +360,176 @@ template <class ElemType>
 template class LearnableParameter<float>;
 template class LearnableParameter<double>;
 
+template <class ElemType>
+void LearnableParameter<ElemType>::Graph2matrix(const vector<DataArc> input, ElemType *&_A, int *&_IA, int *&_JA, int &N, int &nz, ElemType *&smap_A, int *&smap_IA, int *& smap_JA, int &smap_nz, int numSenone, const wchar_t *transfile)
+{
+
+    map<string, pair<ElemType, ElemType>> translp4;
+    if (transfile) {
+        FILE *tin = _wfopen(transfile, L"r");
+        if (!tin) {
+            cout << "unable to open " << transfile << endl;
+            exit(1);
+        }
+        const int slen = 1000;
+        char buff[slen];
+        float slp, flp;
+        while (fscanf(tin, "%s%f%f", buff, &slp, &flp) == 3) {
+            assert(slp <= 0 && flp <= 0); // log-probs are negative
+            if (translp4.count(buff)) {
+                cout << "Error: transition probabilities defined multiple times for " << buff << endl;
+                exit(1);
+            }
+            translp4[buff] = pair<ElemType, ElemType>(exp(-slp), exp(-flp));
+        }
+        fclose(tin);
+    }
+
+    map<int, vector<int> > states4senone;
+
+    int arcstate = 1;  // state 0 will be the start state
+    int start_state = -1;
+    vector<vector<arc>> arcs;
+    map<int, ElemType> cost4final_state;
+    int curr_state = 0, fs = 0;
+    arc ca;
+    vector<arc> carcs;
+    smap_nz = 0;
+    for (auto dataArc : input)
+    {
+        if (dataArc.Senone < 0)
+        {
+            int state = dataArc.From;
+            fs = state;
+            assert(cost4final_state.count(state) == 0);
+            cost4final_state[state] = dataArc.Cost;
+        }
+        else
+        {
+            fs = dataArc.From;
+            ca.source = dataArc.From;
+            ca.destination = dataArc.To;
+            ca.lm_cost = dataArc.Cost;
+            ca.logsp = ca.logfp = 1.0;
+            ca.statenum = arcstate++;
+            states4senone[dataArc.Senone].push_back(ca.statenum);
+            smap_nz++;
+        }
+        if (start_state < 0) start_state = dataArc.From;
+        if (fs != curr_state) {
+            assert(fs == curr_state + 1);  // att format ordered this way
+            arcs.push_back(carcs);  // store the arcs for the previous state
+            carcs.clear();
+            curr_state = fs;
+        }
+        if (dataArc.Senone >= 0)
+            carcs.push_back(ca);
+    }
+
+    // don't forget to store the arcs associated with the last state!
+    arcs.push_back(carcs);  // store the arcs for the previous state
+
+    assert(cost4final_state.size() != 0);
+    assert(start_state == 0);
+
+    const int finalstate = arcstate;  // make a fresh state to be the final state in the graph
+
+    // now write the matrix
+
+    // each arc becomes a state
+    // the LM prob and forward transition probs are applied on transition out of the state
+    // self-loop prob is applied for the on-diagonal transition
+
+    vector<ElemType> A;
+    vector<int> IA, JA;
+    // add a notional start state
+    assert(arcs[0].size());
+    assert(arcs[0].front().source == 0);  // openfst should number the first state 0
+    int counter = 0;
+    for (size_t a = 0; a < arcs[0].size(); a++) {
+        A.push_back(1.0);  // free transition out of the start state
+        JA.push_back(arcs[0][a].statenum);
+        counter++;
+    }
+    IA.push_back(0);
+
+    // now add the rest
+    for (size_t c = 0; c < arcs.size(); c++) {  // for each "from state"
+        assert(arcs[c].size());
+        for (size_t a = 0; a < arcs[c].size(); a++) {
+            const int add = IA.back() + counter;
+            IA.push_back(add);
+            counter = 0;
+
+            const arc &curr = arcs[c][a];
+            const int dest = curr.destination;
+            const vector<arc> &succs = arcs[dest];
+            assert(succs.size());
+            assert(succs[0].source == dest);  // should be 1-1 mapping of states to sets of successor arcs
+            bool added_selfloop = false;
+            for (size_t s = 0; s < succs.size(); s++) {
+                if (s > 0)
+                    assert(succs[s].statenum > succs[s - 1].statenum);
+                if (succs[s].statenum > curr.statenum && !added_selfloop) {
+                    A.push_back(curr.logsp);  // transition to curr.statenum
+                    JA.push_back(curr.statenum);
+                    added_selfloop = true;
+                    counter++;
+                }
+                A.push_back(curr.lm_cost*curr.logfp);  // transition to succs[s].statenum
+                JA.push_back(succs[s].statenum);
+                counter++;
+            }
+            if (cost4final_state.count(dest)) {  // add transition to finalstate
+                A.push_back(cost4final_state[dest]);
+                JA.push_back(finalstate);
+                counter++;
+            }
+        }
+    }
+    const int add = IA.back() + counter;
+    IA.push_back(add);
+    IA.push_back(add);  // the final state has no transitions out, and no self-transition
+    assert(IA.back() == A.size());
+    assert(A.size() == JA.size());
+    assert(IA.size() == finalstate + 2);
+    cout << "Transition matrix has " << (finalstate + 1) << " states and " << A.size() << " nozeros " << endl;
+
+    _A = new ElemType[A.size()];
+    _IA = new int[IA.size()];
+    _JA = new int[JA.size()];
+    copy(&A[0], &A[0] + A.size(), _A);
+    copy(&IA[0], &IA[0] + IA.size(), _IA);
+    copy(&JA[0], &JA[0] + JA.size(), _JA);
+    N = finalstate + 1;
+    nz = (int)A.size();
+
+    assert(smap_nz == arcstate - 1);  // -1 because arcstate 0 is a dummy start state
+    // map the matrix that maps from states to senones
+    smap_A = new ElemType[smap_nz];
+    smap_IA = new int[numSenone + 1];
+    smap_IA[0] = 0;
+    smap_JA = new int[smap_nz];
+    int elem = 0;
+    bool seen_all = true;
+    for (size_t s = 0, smp = 1; s<numSenone; s++, smp++) {
+        if (states4senone.find((int)s) == states4senone.end()) {  // graph build w/ small vocab - not all senones present
+            seen_all = false;
+            smap_IA[smp] = smap_IA[smp - 1];
+            continue;
+        }
+        const vector<int> &states = states4senone[(int)s];
+        for (size_t j = 0; j < states.size(); j++) {
+            assert(j == 0 || states[j]>states[j - 1]);
+            assert(states[j] > 0 && states[j] < finalstate);
+            smap_A[elem] = 1.0;
+            smap_JA[elem] = states[j];
+            elem++;
+        }
+        smap_IA[smp] = smap_IA[smp - 1] + (int)states.size();
+    }
+    if (!seen_all) {
+        cout << "Warning: not all senones present in graph" << endl;
+    }
+}
 }}}

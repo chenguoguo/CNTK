@@ -1247,6 +1247,18 @@ void Matrix<ElemType>::SetMatrixFromCSCFormat(const CPUSPARSE_INDEX_TYPE* h_CSCC
 }
 
 template <class ElemType>
+void Matrix<ElemType>::SetMatrixFromCSRFormat(const GPUSPARSE_INDEX_TYPE* h_CSRRow, const GPUSPARSE_INDEX_TYPE* h_Col, const ElemType* h_Val,
+    const size_t nz, const size_t numRows, const size_t numCols)
+{
+    DISPATCH_MATRIX_ON_FLAG(this,
+        this,
+        NOT_IMPLEMENTED,
+        NOT_IMPLEMENTED,
+        m_CPUSparseMatrix->SetMatrixFromCSRFormat(h_CSRRow, h_Col, h_Val, nz, numRows, numCols),
+        m_GPUSparseMatrix->SetMatrixFromCSRFormat(h_CSRRow, h_Col, h_Val, nz, numRows, numCols));
+}
+
+template <class ElemType>
 void Matrix<ElemType>::SetDiagonalValue(const ElemType v)
 {
     if (IsEmpty())
