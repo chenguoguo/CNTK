@@ -15,6 +15,16 @@ Readme text
 *.py text
 *.pl text
 *.ps1 text
+*.ini text
+*.ps text
+*.simple text
+*.counts text
+*.feats text
+*.labels text
+*.post text
+.gitmodules text
+Dockerfile-CPU text
+Dockerfile-GPU text
 *.sh text eol=lf
 build-and-test text eol=lf
 configure text eol=lf
