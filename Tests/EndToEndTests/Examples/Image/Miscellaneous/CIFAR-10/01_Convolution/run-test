@@ -1,0 +1,11 @@
+#!/bin/bash
+. $TEST_ROOT_DIR/run-test-common
+
+# specific CIFAR variables
+. $TEST_DIR/../run-test-common
+
+# cntkrun <CNTK config file name> <additional CNTK args>
+cntkrun 01_Conv.cntk "Train=[SGD=[maxEpochs=1]] Train=[SGD=[epochSize=100]] Train=[reader=[randomize=none]] stderr=-"
+ExitCode=$?
+
+exit $ExitCode
