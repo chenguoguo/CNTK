@@ -297,7 +297,7 @@ class Test:
           six.print_(self.fullName + ": " + line)
 
         if args.dry_run:
-          print (line)
+          print(line)
           continue
 
         six.print_(line, file=output)
@@ -374,12 +374,7 @@ class Test:
       for f in ["." + flavor.lower(), ""]:
         for d in ["." + device.lower(), ""]:
           candidateName = "baseline" + o + f + d + ".txt"
-<<<<<<< HEAD
           fullPath = cygpath(os.path.join(self.testDir, candidateName), relative=True)
-=======
-          fullPath = cygpath(os.path.join(self.testDir, candidateName),
-                  relative=True)
->>>>>>> f961c91... Works also with Py3 under Cygwin
           if os.path.isfile(fullPath):
             return fullPath
     return None
@@ -456,7 +451,7 @@ class TestCase:
           for p in failedPatterns:
             msg = "Failed pattern: " + p.patternText
             if verbose:
-              print (msg)
+              print(msg)
             result.diagnostics+=msg+"\n"
         # removing this line, since we already matched it (whether successfully or not - doesn't matter)
         del result.expectedLines[0]
@@ -621,7 +616,7 @@ def runCommand(args):
 
   os.environ["TEST_ROOT_DIR"] = os.path.dirname(os.path.realpath(sys.argv[0]))
 
-  print ("CNTK Test Driver is started")
+  print("CNTK Test Driver is started")
   six.print_("Running tests:  " + " ".join([y.fullName for y in testsToRun]))
   six.print_("Build location: " + args.build_location)
   six.print_("Build SKU:      " + args.build_sku)
@@ -629,8 +624,8 @@ def runCommand(args):
   six.print_("Flavors:        " + " ".join(flavors))
   six.print_("Devices:        " + " ".join(devices))
   if (args.update_baseline):
-    print ("*** Running in automatic baseline update mode ***")
-  print ("")
+    print("*** Running in automatic baseline update mode ***")
+  print("")
   if args.dry_run:
     os.environ["DRY_RUN"] = "1"
   succeededCount, totalCount = 0, 0
@@ -649,7 +644,7 @@ def runCommand(args):
           # Printing the test which is about to run (without terminating the line)
           sys.stdout.write("Running test {0} ({1} {2}) - ".format(test.fullName, flavor, device));
           if args.dry_run:
-            print ("[SKIPPED] (dry-run)")
+            print("[SKIPPED] (dry-run)")
           # in verbose mode, terminate the line, since there will be a lot of output
           if args.verbose:
             sys.stdout.write("\n");
@@ -756,7 +751,7 @@ if (args.build_sku):
     sys.exit(1)
   args.buildSKUs = [args.build_sku]
   if args.build_sku == "cpu" and args.devices == ["gpu"]:
-    print >>sys.stderr, "Invalid combination: --build-sku cpu and --device gpu"
+    print("Invalid combination: --build-sku cpu and --device gpu", file=sys.stderr) 
     sys.exit(1)
 
 if args.func == runCommand and not args.build_location:
