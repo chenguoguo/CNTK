@@ -10,6 +10,7 @@ class sparse(object):
 
 from .utils import MODEL_INDENTATION
 from .utils import aggregate_readers
+from .utils import with_metaclass
 
 def _tuple_to_cntk_shape(shape):
     return ':'.join(str(v) for v in shape)
@@ -314,14 +315,14 @@ class ComputationNode(object):
         return "\n".join(desc), has_inputs, aggregate_readers(readers)
 
 
-class InputComputationNodeBase(ComputationNode, metaclass=ABCMeta):
+class InputComputationNodeBase(with_metaclass(ABCMeta, ComputationNode)):
     '''
     Base class for all non-image input nodes nodes and operators. 
     '''
     pass
 
 
-class ImageInputComputationNodeBase(ComputationNode, metaclass=ABCMeta):
+class ImageInputComputationNodeBase(with_metaclass(ABCMeta, ComputationNode)):
 
     '''
     Base class for all image input nodes nodes and operators. 
