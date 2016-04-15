@@ -1,10 +1,10 @@
 dataDir: .
 
 tags:
-    # running on windows BVT job in 'E' (Examples) leg
-    - bvt-e (os == 'linux')
-    # running on windows Nightly job in 'E' (Examples) leg
-    - nightly-e (os == 'linux')
+    # running BVT job in 'E' (Examples) leg
+    - bvt-e 
+    # running Nightly job in 'E' (Examples) leg
+    - nightly-e 
 
 testCases:
   PyTest run must finish with error code 0 (outputs __COMPLETED__ in that case):
