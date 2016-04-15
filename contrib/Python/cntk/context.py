@@ -498,6 +498,9 @@ class Context(AbstractContext):
         except subprocess.CalledProcessError as e:
             with open('error.txt', 'w') as f:
                 f.write(e.output.decode('utf-8'))
+            print("="*50)
+            print(e.output.decode('utf-8'))
+            print("="*50)
             raise
 
         if not output:
