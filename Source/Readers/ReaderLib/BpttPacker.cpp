@@ -130,37 +130,34 @@ BpttPacker::BpttPacker(
 
 void BpttPacker::StartEpoch(const EpochConfiguration& config)
 {
-    if (m_minibatchSize == config.m_minibatchSizeInSamples &&
-        m_truncationSize == config.m_truncationSize)
+    if (m_minibatchSize != config.m_minibatchSizeInSamples ||
+        m_truncationSize != config.m_truncationSize)
     {
-        // nothing changed since last epoch.
-        return;
-    }
+        m_minibatchSize = config.m_minibatchSizeInSamples;
+        m_truncationSize = config.m_truncationSize;
 
-    m_minibatchSize = config.m_minibatchSizeInSamples;
-    m_truncationSize = config.m_truncationSize;
+        if (m_minibatchSize == 0)
+        {
+            LogicError("Minibatch size cannot be zero.");
+        }
+        else if (m_truncationSize == 0)
+        {
+            LogicError("Minibatch size cannot be zero.");
+        }
 
-    if (m_minibatchSize == 0)
-    {
-        LogicError("Minibatch size cannot be zero.");
-    } 
-    else if (m_truncationSize == 0)
-    {
-        LogicError("Minibatch size cannot be zero.");
-    }
+        // Estimating the number of parallel sequences to pack (slots) from the minibatch size and truncation size.
+        m_numParallelSequences = max(1, (int)floor(m_minibatchSize / m_truncationSize));
 
-    // Estimating the number of parallel sequences to pack (slots) from the minibatch size and truncation size.
-    m_numParallelSequences = max(1, (int)floor(m_minibatchSize / m_truncationSize));
+        m_sequenceBufferPerStream.clear();
 
-    m_sequenceBufferPerStream.clear();
-
-    // Preparing the buffers.
-    for (int i = 0; i < m_outputStreamDescriptions.size(); ++i)
-    {
-        const auto& stream = m_outputStreamDescriptions[i];
-        auto& buffer = m_streamBuffers[i];
-        buffer.Resize(m_numParallelSequences * m_truncationSize * GetSampleSize(stream));
-        m_sequenceBufferPerStream.push_back(make_shared<SequenceBuffer>(m_numParallelSequences));
+        // Preparing the buffers.
+        for (int i = 0; i < m_outputStreamDescriptions.size(); ++i)
+        {
+            const auto& stream = m_outputStreamDescriptions[i];
+            auto& buffer = m_streamBuffers[i];
+            buffer.Resize(m_numParallelSequences * m_truncationSize * GetSampleSize(stream));
+            m_sequenceBufferPerStream.push_back(make_shared<SequenceBuffer>(m_numParallelSequences));
+        }
     }
 
     // Filling in the initial set of sequences
