@@ -24,6 +24,15 @@ void PackerBase::StreamBuffer::Resize(size_t newSize)
     });
 }
 
+void PackerBase::StartEpoch(const EpochConfiguration& config)
+{
+    m_minibatchSize = config.m_minibatchSizeInSamples;
+    if (m_minibatchSize == 0)
+    {
+        LogicError("Minibatch size cannot be zero.");
+    }
+}
+
 PackerBase::PackerBase(MemoryProviderPtr memoryProvider,
     TransformerPtr transformer,
     const std::vector<StreamDescriptionPtr>& streams) :

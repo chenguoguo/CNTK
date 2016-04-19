@@ -52,9 +52,6 @@ private:
     // Calculated based on the truncation size and minibatch size in samples.
     size_t m_numParallelSequences;
 
-    // Legacy mode flag.
-    bool m_legacyMode;
-
     // Truncation size in samples.
     size_t m_truncationSize;
 

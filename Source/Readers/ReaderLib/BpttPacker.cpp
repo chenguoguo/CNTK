@@ -118,8 +118,7 @@ BpttPacker::BpttPacker(
         RuntimeError("Sparse output is not supported in BPTT mode.");
     }
 
-
-    // Preparing the buffers.
+    // Preparing layouts.
     for (int i = 0; i < m_outputStreamDescriptions.size(); ++i)
     {
         auto pMBLayout = make_shared<MBLayout>();
@@ -140,9 +139,9 @@ void BpttPacker::StartEpoch(const EpochConfiguration& config)
         {
             LogicError("Minibatch size cannot be zero.");
         }
-        else if (m_truncationSize == 0)
+        if (m_truncationSize == 0)
         {
-            LogicError("Minibatch size cannot be zero.");
+            LogicError("Truncation size cannot be zero.");
         }
 
         // Estimating the number of parallel sequences to pack (slots) from the minibatch size and truncation size.

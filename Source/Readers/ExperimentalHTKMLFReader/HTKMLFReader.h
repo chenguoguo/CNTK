@@ -26,7 +26,7 @@ public:
     std::vector<StreamDescriptionPtr> GetStreamDescriptions() override;
 
     // Starts a new epoch with the provided configuration.
-    void StartEpoch(EpochConfiguration& config) override;
+    void StartEpoch(const EpochConfiguration& config) override;
 
     // Reads a single minibatch.
     Minibatch ReadMinibatch() override;

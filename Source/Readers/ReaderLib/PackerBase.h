@@ -73,14 +73,7 @@ protected:
 
 public:
     // Sets current epoch configuration.
-    virtual void StartEpoch(const EpochConfiguration& config) override
-    {
-        m_minibatchSize = config.m_minibatchSizeInSamples;
-        if (m_minibatchSize == 0)
-        {
-            LogicError("Minibatch size cannot be zero.");
-        }
-    }
+    virtual void StartEpoch(const EpochConfiguration& config) override;
 };
 
 inline void PackerBase::PackSparseSampleAsDense(char* destination, SparseSequenceDataPtr sequence,

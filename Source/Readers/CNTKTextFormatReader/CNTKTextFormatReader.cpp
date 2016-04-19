@@ -65,11 +65,11 @@ std::vector<StreamDescriptionPtr> CNTKTextFormatReader::GetStreamDescriptions()
     return m_deserializer->GetStreamDescriptions();
 }
 
-void CNTKTextFormatReader::StartEpoch(EpochConfiguration& config)
+void CNTKTextFormatReader::StartEpoch(const EpochConfiguration& config)
 {
-    if (config.m_totalEpochSizeInSamples <= 0)
+    if (config.m_totalEpochSizeInSamples == 0)
     {
-        RuntimeError("Unsupported minibatch size '%d'.", (int)config.m_totalEpochSizeInSamples);
+        RuntimeError("Epoch size cannot be 0.");
     }
 
     m_transformer->StartEpoch(config);

@@ -167,12 +167,14 @@ std::vector<StreamDescriptionPtr> HTKMLFReader::GetStreamDescriptions()
     return m_streams;
 }
 
-void HTKMLFReader::StartEpoch(EpochConfiguration& config)
+void HTKMLFReader::StartEpoch(const EpochConfiguration& config)
 {
-    if (config.m_totalEpochSizeInSamples <= 0)
+    if (config.m_totalEpochSizeInSamples == 0)
     {
-        RuntimeError("Unsupported minibatch size '%d'.", (int)config.m_totalEpochSizeInSamples);
+        RuntimeError("Epoch size cannot be 0.");
     }
+
+
 
     if (m_packingMode == PackingMode::truncated)
     {
@@ -189,12 +191,22 @@ void HTKMLFReader::StartEpoch(EpochConfiguration& config)
             minibatchSize = numParallelSequences * truncationLength;
         }
         
-        config.m_minibatchSizeInSamples = minibatchSize;
-        config.m_truncationSize = truncationLength;
-    }
+        EpochConfiguration bpttConfig;
+        bpttConfig.m_numberOfWorkers = config.m_numberOfWorkers;
+        bpttConfig.m_workerRank = config.m_workerRank;
+        bpttConfig.m_totalEpochSizeInSamples = config.m_totalEpochSizeInSamples;
+        bpttConfig.m_epochIndex = config.m_epochIndex;
+        bpttConfig.m_minibatchSizeInSamples = minibatchSize;
+        bpttConfig.m_truncationSize = truncationLength;
 
-    m_randomizer->StartEpoch(config);
-    m_packer->StartEpoch(config);
+        m_randomizer->StartEpoch(bpttConfig);
+        m_packer->StartEpoch(bpttConfig);
+    }
+    else
+    {
+        m_randomizer->StartEpoch(config);
+        m_packer->StartEpoch(config);
+    }
 }
 
 Minibatch HTKMLFReader::ReadMinibatch()

@@ -79,11 +79,11 @@ std::vector<StreamDescriptionPtr> ImageReader::GetStreamDescriptions()
     return m_streams;
 }
 
-void ImageReader::StartEpoch(EpochConfiguration& config)
+void ImageReader::StartEpoch(const EpochConfiguration& config)
 {
-    if (config.m_totalEpochSizeInSamples <= 0)
+    if (config.m_totalEpochSizeInSamples == 0)
     {
-        RuntimeError("Unsupported minibatch size '%u'.", (int)config.m_totalEpochSizeInSamples);
+        RuntimeError("Epoch size cannot be 0.");
     }
 
     m_transformer->StartEpoch(config);

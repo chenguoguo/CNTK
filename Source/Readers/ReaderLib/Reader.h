@@ -103,7 +103,7 @@ public:
     virtual std::vector<StreamDescriptionPtr> GetStreamDescriptions() = 0;
 
     // Starts a new epoch with the provided configuration
-    virtual void StartEpoch(EpochConfiguration& config) = 0;
+    virtual void StartEpoch(const EpochConfiguration& config) = 0;
 
     // Reads a minibatch that contains data across all streams.
     virtual Minibatch ReadMinibatch() = 0;
