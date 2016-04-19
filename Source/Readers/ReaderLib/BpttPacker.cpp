@@ -108,11 +108,9 @@ struct SequenceBuffer
 BpttPacker::BpttPacker(
     MemoryProviderPtr memoryProvider,
     TransformerPtr transformer,
-    size_t minibatchSize,
-    size_t truncationSize,
     const vector<StreamDescriptionPtr>& streams)
-    : PackerBase(memoryProvider, transformer, minibatchSize, streams),
-    m_truncationSize(truncationSize)
+    : PackerBase(memoryProvider, transformer, streams),
+    m_truncationSize(0)
 {
     auto sparseOutput = find_if(m_outputStreamDescriptions.begin(), m_outputStreamDescriptions.end(), [](const StreamDescriptionPtr& s){ return s->m_storageType == StorageType::sparse_csc; });
     if (sparseOutput != m_outputStreamDescriptions.end())
@@ -120,8 +118,41 @@ BpttPacker::BpttPacker(
         RuntimeError("Sparse output is not supported in BPTT mode.");
     }
 
+
+    // Preparing the buffers.
+    for (int i = 0; i < m_outputStreamDescriptions.size(); ++i)
+    {
+        auto pMBLayout = make_shared<MBLayout>();
+        pMBLayout->SetUniqueAxisName(L"BpttPacker");
+        m_currentLayouts.push_back(pMBLayout);
+    }
+}
+
+void BpttPacker::StartEpoch(const EpochConfiguration& config)
+{
+    if (m_minibatchSize == config.m_minibatchSizeInSamples &&
+        m_truncationSize == config.m_truncationSize)
+    {
+        // nothing changed since last epoch.
+        return;
+    }
+
+    m_minibatchSize = config.m_minibatchSizeInSamples;
+    m_truncationSize = config.m_truncationSize;
+
+    if (m_minibatchSize == 0)
+    {
+        LogicError("Minibatch size cannot be zero.");
+    } 
+    else if (m_truncationSize == 0)
+    {
+        LogicError("Minibatch size cannot be zero.");
+    }
+
     // Estimating the number of parallel sequences to pack (slots) from the minibatch size and truncation size.
     m_numParallelSequences = max(1, (int)floor(m_minibatchSize / m_truncationSize));
+
+    m_sequenceBufferPerStream.clear();
 
     // Preparing the buffers.
     for (int i = 0; i < m_outputStreamDescriptions.size(); ++i)
@@ -130,9 +161,6 @@ BpttPacker::BpttPacker(
         auto& buffer = m_streamBuffers[i];
         buffer.Resize(m_numParallelSequences * m_truncationSize * GetSampleSize(stream));
         m_sequenceBufferPerStream.push_back(make_shared<SequenceBuffer>(m_numParallelSequences));
-        auto pMBLayout = make_shared<MBLayout>();
-        pMBLayout->SetUniqueAxisName(L"BpttPacker");
-        m_currentLayouts.push_back(pMBLayout);
     }
 
     // Filling in the initial set of sequences

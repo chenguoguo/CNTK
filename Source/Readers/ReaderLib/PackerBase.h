@@ -35,7 +35,6 @@ protected:
 
     PackerBase(MemoryProviderPtr memoryProvider,
                TransformerPtr transformer,
-               size_t minibatchSize,
                const std::vector<StreamDescriptionPtr>& streams);
 
     typedef std::vector<SequenceDataPtr> StreamBatch;
@@ -71,6 +70,17 @@ protected:
 
     // Minibatch size in samples.
     size_t m_minibatchSize;
+
+public:
+    // Sets current epoch configuration.
+    virtual void StartEpoch(const EpochConfiguration& config) override
+    {
+        m_minibatchSize = config.m_minibatchSizeInSamples;
+        if (m_minibatchSize == 0)
+        {
+            LogicError("Minibatch size cannot be zero.");
+        }
+    }
 };
 
 inline void PackerBase::PackSparseSampleAsDense(char* destination, SparseSequenceDataPtr sequence,

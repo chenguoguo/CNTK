@@ -24,11 +24,11 @@ public:
     BpttPacker(
         MemoryProviderPtr memoryProvider,
         TransformerPtr transformer,
-        size_t minibatchSize,
-        size_t truncationSize,
         const std::vector<StreamDescriptionPtr>& streams);
 
     virtual Minibatch ReadMinibatch() override;
+
+    virtual void StartEpoch(const EpochConfiguration& config) override;
 
 private:
     // Reads sequences to slot with the specified index.
@@ -51,6 +51,9 @@ private:
     // Parallel number of sequences to pack.
     // Calculated based on the truncation size and minibatch size in samples.
     size_t m_numParallelSequences;
+
+    // Legacy mode flag.
+    bool m_legacyMode;
 
     // Truncation size in samples.
     size_t m_truncationSize;

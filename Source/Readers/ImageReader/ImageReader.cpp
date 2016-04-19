@@ -66,6 +66,11 @@ ImageReader::ImageReader(MemoryProviderPtr provider,
     }
 
     m_transformer = last;
+
+    m_packer = std::make_shared<FramePacker>(
+        m_provider,
+        m_transformer,
+        m_streams);
 }
 
 std::vector<StreamDescriptionPtr> ImageReader::GetStreamDescriptions()
@@ -74,7 +79,7 @@ std::vector<StreamDescriptionPtr> ImageReader::GetStreamDescriptions()
     return m_streams;
 }
 
-void ImageReader::StartEpoch(const EpochConfiguration& config)
+void ImageReader::StartEpoch(EpochConfiguration& config)
 {
     if (config.m_totalEpochSizeInSamples <= 0)
     {
@@ -82,11 +87,7 @@ void ImageReader::StartEpoch(const EpochConfiguration& config)
     }
 
     m_transformer->StartEpoch(config);
-    m_packer = std::make_shared<FramePacker>(
-        m_provider,
-        m_transformer,
-        config.m_minibatchSizeInSamples,
-        m_streams);
+    m_packer->StartEpoch(config);
 }
 
 Minibatch ImageReader::ReadMinibatch()

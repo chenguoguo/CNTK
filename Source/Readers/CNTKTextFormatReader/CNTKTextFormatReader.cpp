@@ -47,6 +47,12 @@ CNTKTextFormatReader::CNTKTextFormatReader(MemoryProviderPtr provider,
         randomizer->Initialize(nullptr, config);
 
         m_transformer = randomizer;
+
+        // TODO: add "frameMode"  config paramter
+        m_packer = std::make_shared<SequencePacker>(
+            m_provider,
+            m_transformer,
+            GetStreamDescriptions());
     }
     catch (const std::runtime_error& e)
     {
@@ -59,7 +65,7 @@ std::vector<StreamDescriptionPtr> CNTKTextFormatReader::GetStreamDescriptions()
     return m_deserializer->GetStreamDescriptions();
 }
 
-void CNTKTextFormatReader::StartEpoch(const EpochConfiguration& config)
+void CNTKTextFormatReader::StartEpoch(EpochConfiguration& config)
 {
     if (config.m_totalEpochSizeInSamples <= 0)
     {
@@ -67,12 +73,7 @@ void CNTKTextFormatReader::StartEpoch(const EpochConfiguration& config)
     }
 
     m_transformer->StartEpoch(config);
-    // TODO: add "frameMode"  config paramter
-    m_packer = std::make_shared<SequencePacker>(
-        m_provider,
-        m_transformer,
-        config.m_minibatchSizeInSamples,
-        GetStreamDescriptions());
+    m_packer->StartEpoch(config);
 }
 
 Minibatch CNTKTextFormatReader::ReadMinibatch()

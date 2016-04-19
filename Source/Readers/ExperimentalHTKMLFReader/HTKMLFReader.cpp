@@ -136,22 +136,6 @@ HTKMLFReader::HTKMLFReader(MemoryProviderPtr provider,
             m_streams.push_back(stream);
         }
     }
-}
-
-std::vector<StreamDescriptionPtr> HTKMLFReader::GetStreamDescriptions()
-{
-    assert(!m_streams.empty());
-    return m_streams;
-}
-
-void HTKMLFReader::StartEpoch(const EpochConfiguration& config)
-{
-    if (config.m_totalEpochSizeInSamples <= 0)
-    {
-        RuntimeError("Unsupported minibatch size '%d'.", (int)config.m_totalEpochSizeInSamples);
-    }
-
-    m_randomizer->StartEpoch(config);
 
     // TODO: should we unify sample and sequence mode packers into a single one.
     // TODO: functionally they are the same, the only difference is how we handle
@@ -164,20 +148,33 @@ void HTKMLFReader::StartEpoch(const EpochConfiguration& config)
     switch (m_packingMode)
     {
     case PackingMode::sample:
-        m_packer = std::make_shared<FramePacker>(
-            m_provider,
-            m_randomizer,
-            config.m_minibatchSizeInSamples,
-            m_streams);
+        m_packer = std::make_shared<FramePacker>(m_provider, m_randomizer, m_streams);
         break;
     case PackingMode::sequence:
-        m_packer = std::make_shared<SequencePacker>(
-            m_provider,
-            m_randomizer,
-            config.m_minibatchSizeInSamples,
-            m_streams);
+        m_packer = std::make_shared<SequencePacker>(m_provider, m_randomizer, m_streams);
         break;
     case PackingMode::truncated:
+        m_packer = std::make_shared<BpttPacker>(m_provider, m_randomizer, m_streams);
+        break;
+    default:
+        LogicError("Unsupported type of packer '%d'.", (int)m_packingMode);
+    }
+}
+
+std::vector<StreamDescriptionPtr> HTKMLFReader::GetStreamDescriptions()
+{
+    assert(!m_streams.empty());
+    return m_streams;
+}
+
+void HTKMLFReader::StartEpoch(EpochConfiguration& config)
+{
+    if (config.m_totalEpochSizeInSamples <= 0)
+    {
+        RuntimeError("Unsupported minibatch size '%d'.", (int)config.m_totalEpochSizeInSamples);
+    }
+
+    if (m_packingMode == PackingMode::truncated)
     {
         size_t minibatchSize = config.m_minibatchSizeInSamples;
         size_t truncationLength = m_truncationLength;
@@ -191,18 +188,13 @@ void HTKMLFReader::StartEpoch(const EpochConfiguration& config)
             size_t numParallelSequences = m_numParallelSequencesForAllEpochs[config.m_epochIndex];
             minibatchSize = numParallelSequences * truncationLength;
         }
+        
+        config.m_minibatchSizeInSamples = minibatchSize;
+        config.m_truncationSize = truncationLength;
+    }
 
-        m_packer = std::make_shared<BpttPacker>(
-            m_provider,
-            m_randomizer,
-            minibatchSize,
-            truncationLength,
-            m_streams);
-        break;
-    }
-    default:
-        LogicError("Unsupported type of packer '%d'.", (int)m_packingMode);
-    }
+    m_randomizer->StartEpoch(config);
+    m_packer->StartEpoch(config);
 }
 
 Minibatch HTKMLFReader::ReadMinibatch()
