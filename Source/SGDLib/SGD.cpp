@@ -753,6 +753,8 @@ size_t SGD<ElemType>::TrainOneEpoch(ComputationNetworkPtr net,
     size_t totalEpochSamples = 0;
 
     int numMBsRun = 0;
+    int lastNumMBsRun = 0;
+    int currentNumMBsToShowResult = 0 < m_firstMBsToShowResult ? 1 : m_numMBsToShowResult;
 
     bool useGradientAggregation = ((GetParallelizationMethod() == ParallelizationMethod::DataParallelSGD) &&
                                    (epochNumber >= m_parallelizationStartEpochNum));
@@ -1066,7 +1068,7 @@ size_t SGD<ElemType>::TrainOneEpoch(ComputationNetworkPtr net,
 
         // log
         // This shows the criterion since last logged.
-        if (numMBsRun <= m_firstMBsToShowResult || (m_numMBsToShowResult && (numMBsRun % m_numMBsToShowResult == 0)))
+        if (currentNumMBsToShowResult && (numMBsRun % currentNumMBsToShowResult == 0))
         {
             // get the epoch Values updated
             if (!useGradientAggregation)
@@ -1097,7 +1099,7 @@ size_t SGD<ElemType>::TrainOneEpoch(ComputationNetworkPtr net,
                 // progress tracing for compute cluster management
                 double mbProg = 0.0;
                 int mbProgNumPrecision = 2;
-                if (m_maxComputedEpochSize != 0)
+                if (m_maxComputedEpochSize != 0) // TODO always true. What about requestDataSize?
                 {
                     double numMBPerEpoch = (double) m_maxComputedEpochSize / (double) tunedMBSize;
                     mbProg = (double) numMBsRun / numMBPerEpoch;
@@ -1110,7 +1112,7 @@ size_t SGD<ElemType>::TrainOneEpoch(ComputationNetworkPtr net,
                 string formatString = "%s Epoch[%2d of %d]-Minibatch[%4d-%4d, %2." + std::to_string(mbProgNumPrecision) + "f%%]: SamplesSeen = %d; TrainLossPerSample = " +
                                       GeneratePaddedFloatOrExpFormat(11, 8, trainLossSinceLastLogged) + "; ";
                 SGDTrace(stderr, true, formatString.c_str(),
-                         prefixMsg.c_str(), epochNumber + 1, m_maxEpochs, numMBsRun - m_numMBsToShowResult + 1,
+                         prefixMsg.c_str(), epochNumber + 1, m_maxEpochs, lastNumMBsRun + 1,
                          numMBsRun, mbProg * 100, trainSamplesSinceLastLogged, trainLossSinceLastLogged);
             }
             else // if not configured to be able to print a percentage then do this instead:
@@ -1120,9 +1122,9 @@ size_t SGD<ElemType>::TrainOneEpoch(ComputationNetworkPtr net,
                 string formatString = "%s Epoch[%2d of %d]-Minibatch[%4d-%4d]: SamplesSeen = %d; TrainLossPerSample = " +
                                       GeneratePaddedFloatOrExpFormat(11, 8, trainLossSinceLastLogged) + "; ";
                 SGDTrace(stderr, true, formatString.c_str(),
-                         prefixMsg.c_str(), epochNumber + 1, m_maxEpochs, numMBsRun - m_numMBsToShowResult + 1,
+                         prefixMsg.c_str(), epochNumber + 1, m_maxEpochs, lastNumMBsRun + 1,
                          numMBsRun, trainSamplesSinceLastLogged, trainLossSinceLastLogged);
-                m_maxComputedEpochSize = numMBsRun * trainSamplesSinceLastLogged / m_numMBsToShowResult;
+                m_maxComputedEpochSize = numMBsRun * trainSamplesSinceLastLogged / m_numMBsToShowResult; // TODO conflicts with m_firstMBsToShowResult
             }
 
             for (size_t i = 0; i < epochEvalErrors.size(); i++)
@@ -1150,6 +1152,12 @@ size_t SGD<ElemType>::TrainOneEpoch(ComputationNetworkPtr net,
             epochEvalErrorsLastLogged = epochEvalErrors;
 
             totalTimeInMBs = 0;
+            lastNumMBsRun = numMBsRun;
+        }
+
+        if (numMBsRun == m_firstMBsToShowResult)
+        {
+            currentNumMBsToShowResult = m_numMBsToShowResult;
         }
 
         timer.Restart();

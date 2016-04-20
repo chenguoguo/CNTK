@@ -5,6 +5,8 @@ deviceId = $DeviceId$
 parallelTrain = false
 makeMode = false
 
+firstMBsToShowResult = 4
+
 speechTrain = [
     action = "train"
     modelPath = "$RunDir$/models/cntkSpeech.dnn"
