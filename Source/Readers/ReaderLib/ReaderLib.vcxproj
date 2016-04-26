@@ -79,6 +79,7 @@
   <ItemGroup>
     <ClInclude Include="Bundler.h" />
     <ClInclude Include="ChunkRandomizer.h" />
+    <ClInclude Include="CompositeTransformer.h" />
     <ClInclude Include="DataDeserializerBase.h" />
     <ClInclude Include="BlockRandomizer.h" />
     <ClInclude Include="Packer.h" />
