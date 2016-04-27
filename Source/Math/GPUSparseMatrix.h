@@ -8,6 +8,11 @@
 #include "GPUMatrix.h"
 #include "CPUSparseMatrix.h"
 #include <functional>
+#include "cusparse_v2.h"
+// Max number of GPUs on a _single_ node.
+#ifndef MAX_GPUS
+#define MAX_GPUS 16
+#endif
 
 namespace Microsoft { namespace MSR { namespace CNTK {
 
@@ -63,7 +68,6 @@ public:
     using Base::SetFormat;
     using Base::IsEmpty;
 
-
 public:
     GPUSparseMatrix(const size_t numRows, const size_t numCols, const size_t numNZ, DEVICEID_TYPE computeDevice, const MatrixFormat matrixFormat = MatrixFormat::matrixFormatSparseCSR);
 
@@ -78,6 +82,13 @@ public:
     // #endif    /* LINUX */
 
     ~GPUSparseMatrix();
+
+public:
+	static const int MaxGpus = MAX_GPUS;
+	static cusparseHandle_t GetCusparseHandle(DEVICEID_TYPE deviceId = -1);
+
+private:
+	static cusparseHandle_t s_cusparseHandle[MaxGpus];
 
 public:
     void Reset();
@@ -453,6 +464,12 @@ private:
     DEVICEID_TYPE PrepareDevice(const DEVICEID_TYPE deviceId = -1) const;
     size_t IdentifyRowsWithValues() const;
 
+private:
+	static double multimer;
+	static long mulcounter;
 };
-
+template <class ElemType>
+double GPUSparseMatrix<ElemType>::multimer = 0.;
+template <class ElemType>
+long GPUSparseMatrix<ElemType>::mulcounter = 0;
 }}}
