@@ -70,10 +70,6 @@ namespace Microsoft.MSR.CNTK.Extensibility.Managed.CSEvalClient
 
                 using (var model = new IEvaluateModelManagedF())
                 {
-                    // Initialize model evaluator
-                    string config = GetFileContents(Path.Combine(Environment.CurrentDirectory, @"..\Config\01_OneHidden.cntk"));
-                    model.Init(config);
-
                     // Load model
                     string modelFilePath = Path.Combine(Environment.CurrentDirectory, @"..\Output\Models\01_OneHidden");
                     model.CreateNetwork(string.Format("deviceId=-1\nmodelPath=\"{0}\"", modelFilePath));
@@ -112,10 +108,6 @@ namespace Microsoft.MSR.CNTK.Extensibility.Managed.CSEvalClient
 
                 using (var model = new IEvaluateModelManagedF())
                 {
-                    // Initialize model evaluator
-                    string config = GetFileContents(Path.Combine(Environment.CurrentDirectory, @"..\Config\01_OneHidden.cntk"));
-                    model.Init(config);
-
                     // Load model
                     string modelFilePath = Path.Combine(Environment.CurrentDirectory, @"..\Output\Models\01_OneHidden");
                     model.CreateNetwork(string.Format("deviceId=-1\nmodelPath=\"{0}\"", modelFilePath));
@@ -161,7 +153,7 @@ namespace Microsoft.MSR.CNTK.Extensibility.Managed.CSEvalClient
                     model.Init("deviceId=-1");
 
                     // Create the network
-                    string networkDescription = GetFileContents(Path.Combine(workingDirectory, @"AddOperatorConstant.cntk"));
+                    string networkDescription = File.ReadAllText(Path.Combine(workingDirectory, @"AddOperatorConstant.cntk"));
                     model.CreateNetwork(networkDescription);
 
                     // Generate random input values in the appropriate structure and size
@@ -203,7 +195,7 @@ namespace Microsoft.MSR.CNTK.Extensibility.Managed.CSEvalClient
                     model.Init("deviceId=-1");
 
                     // Create the network
-                    string networkDescription = GetFileContents(Path.Combine(workingDirectory, @"AddOperatorConstantNoInput.cntk"));
+                    string networkDescription = File.ReadAllText(Path.Combine(workingDirectory, @"AddOperatorConstantNoInput.cntk"));
                     model.CreateNetwork(networkDescription);
 
                     // We can call the evaluate method and get back the results (single layer)...
@@ -271,16 +263,6 @@ namespace Microsoft.MSR.CNTK.Extensibility.Managed.CSEvalClient
             }
 
             return dict;
-        }
-
-        /// <summary>
-        /// Reads the configuration file and returns the contents as a string
-        /// </summary>
-        /// <returns>The content of the configuration file</returns>
-        static string GetFileContents(string filePath)
-        {
-            var lines = System.IO.File.ReadAllLines(filePath);
-            return string.Join("\n", lines);
         }
 
         /// <summary>
