@@ -95,8 +95,7 @@ if not file_out:
         dot = len(file_in)
     file_out = file_in[:dot] + "_cntk_text" + file_in[dot:]
 
-print (" Converting from UCI format\n\t '{}'\n"
-       " to CNTK text format\n\t '{}'").format(file_in, file_out)
+print (" Converting from UCI format\n\t '%s'\nto CNTK text format\n\t '%s'"%(file_in, file_out))
 
 input_file = open(file_in, 'r')
 output_file = open(file_out, 'w')
