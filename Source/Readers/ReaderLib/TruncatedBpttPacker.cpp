@@ -64,9 +64,9 @@ public:
 
     // offset of the current sample into the data region of the first sequence.
     // For dense input, this is just (sample cursor) x (sample size in bytes).
-    // For sparse input, this is (element size in bytes) x (sum of nnz counts 
+    // For sparse input, this is (element size in bytes) x (sum of nnz counts
     // of all preceding samples).
-    size_t m_sampleOffset; 
+    size_t m_sampleOffset;
 
 private:
     // Prepared sequences.
@@ -147,6 +147,15 @@ void TruncatedBPTTPacker::StartEpoch(const EpochConfiguration& config)
 
         // Estimating the number of parallel sequences to pack (slots) from the minibatch size and truncation size.
         m_numParallelSequences = max(1, (int)floor(m_minibatchSize / m_truncationSize));
+
+        if (config.m_numberOfWorkers > m_numParallelSequences)
+        {
+            InvalidArgument("Too many workers for minibatch size, please decrease truncation length, or increase minibatch size, or decrease number of workers");
+        }
+
+        m_numParallelSequences =
+            (m_numParallelSequences / config.m_numberOfWorkers) +
+            (config.m_workerRank < (m_numParallelSequences % config.m_numberOfWorkers) ? 1 : 0);
 
         m_sequenceBufferPerStream.clear();
 
@@ -270,7 +279,7 @@ void TruncatedBPTTPacker::PackSlot(size_t streamIndex, size_t slotIndex, size_t&
             // TODO: make type casts members of the SparseSequenceData
             SparseSequenceDataPtr sparseSequence = static_pointer_cast<SparseSequenceData>(data);
             assert(slot.m_sampleCursor < sparseSequence->m_nnzCounts.size());
-            PackSparseSampleAsDense(destination, sparseSequence, slot.m_sampleCursor, 
+            PackSparseSampleAsDense(destination, sparseSequence, slot.m_sampleCursor,
                 slot.m_sampleOffset, sampleSize, elementSize);
             slot.m_sampleOffset += sparseSequence->m_nnzCounts[slot.m_sampleCursor];
             assert(slot.m_sampleOffset <= sparseSequence->m_totalNnzCount);
