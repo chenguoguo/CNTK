@@ -594,21 +594,30 @@ BOOST_AUTO_TEST_CASE(CNTKTextFormatReader_invalid_input)
     streams[1].m_storageType = StorageType::sparse_csc;
     streams[1].m_sampleDimension = 10;
 
+    fprintf(stderr, "XXXXXXXXXXXXXXXXXXX-------------1");
     CNTKTextFormatReaderTestRunner<float> testRunner("invalid_input.txt", streams, 99999);
+    fprintf(stderr, "XXXXXXXXXXXXXXXXXXX-------------2");
 
     auto output = testDataPath() + "/Control/CNTKTextFormatReader/invalid_input_Output.txt";
+    fprintf(stderr, "XXXXXXXXXXXXXXXXXXX-------------3");
     freopen(output.c_str(), "w", stderr);
-
+    fprintf(stderr, "XXXXXXXXXXXXXXXXXXX-------------4");
     {
         BOOST_SCOPE_EXIT( void )
         {
+            fprintf(stderr, "XXXXXXXXXXXXXXXXXXX-------------7");
             fclose(stderr);
+            fprintf(stderr, "XXXXXXXXXXXXXXXXXXX-------------8");
             freopen("CON", "w", stderr);
+            fprintf(stderr, "XXXXXXXXXXXXXXXXXXX-------------9");
         } BOOST_SCOPE_EXIT_END
         
+        fprintf(stderr, "XXXXXXXXXXXXXXXXXXX-------------5");
         testRunner.LoadChunk();
-    }
+        fprintf(stderr, "XXXXXXXXXXXXXXXXXXX-------------6");
 
+    }
+    fprintf(stderr, "XXXXXXXXXXXXXXXXXXX-------------10");
     auto control = testDataPath() + "/Control/CNTKTextFormatReader/invalid_input_Control.txt";
 
     CheckFilesEquivalent(control, output);
