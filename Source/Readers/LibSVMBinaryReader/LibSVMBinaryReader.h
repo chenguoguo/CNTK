@@ -34,6 +34,10 @@ private:
     std::deque<T> d_queue;
 
 public:
+	size_t size()
+	{
+		return d_queue.size();
+	}
     void push(T const& value)
     {
         {
