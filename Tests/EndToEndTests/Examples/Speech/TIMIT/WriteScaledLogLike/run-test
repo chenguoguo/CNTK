@@ -28,10 +28,10 @@ if [ $ExitCode == 0 ]; then
   if [ $ExitCode == 0 ]; then
     echo MD5 check succeeded.
   else
-    echo Error: Output files are different.
+    find $OutputDir -type f -print0 | xargs -0 md5sum
+    echo Error: Output files are different. More info above.
   fi
 fi
-
 
 # Delete the test data
 rm -rf $DataDir
