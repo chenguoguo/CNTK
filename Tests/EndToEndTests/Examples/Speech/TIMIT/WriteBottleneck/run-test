@@ -17,16 +17,20 @@ cp -R $DataSourceDir/* $DataDir || exit $?
 cntkrun TIMIT_WriteBottleneck.cntk "$CntkArguments"
 ExitCode=$?
 
-# TODO investigate test failures
-## Compare the output files
-#OutputDir=$DataDir/bottleneck
-#
-#cd $OutputDir && md5sum --quiet -c $TEST_DIR/expected_output.txt
-#if [ $? != 0 ]; then
-#  echo Error: Output files are different.
-#  $ExitCode = 1
-#fi
-#echo MD5 check succeeded.
+if [ $ExitCode == 0 ]; then
+  echo Write succeeded.
+
+  # Compare the output files
+  OutputDir=$DataDir/bottleneck
+  
+  cd $OutputDir && md5sum --quiet -c $TEST_DIR/expected_output.txt
+  ExitCode=$?
+  if [ $ExitCode == 0 ]; then
+    echo MD5 check succeeded.
+  else
+    echo Error: Output files are different.
+  fi
+fi
 
 # Delete the test data
 rm -rf $DataDir
