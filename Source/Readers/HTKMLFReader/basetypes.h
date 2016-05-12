@@ -401,6 +401,20 @@ static inline void bytereverse(T &v) throw()
         swap(p[k], p[elemsize - 1 - k]);
 }
 
+static inline void bytereverse(float &v) throw()
+{
+    static_assert(sizeof(float) == 4, "sizeof(float) == 4");
+    auto p = (uint32_t *) &v;
+    *p = __builtin_bswap32(*p);
+}
+
+static inline void bytereverse(double &v) throw()
+{
+    static_assert(sizeof(double) == 8, "sizeof(double) == 8");
+    auto p = (uint64_t *) &v;
+    *p = __builtin_bswap64(*p);
+}
+
 // byte-swap an entire array
 template <class V>
 static inline void byteswap(V &v) throw()
