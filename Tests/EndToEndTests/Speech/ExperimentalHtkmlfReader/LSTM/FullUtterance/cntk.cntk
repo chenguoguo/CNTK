@@ -30,7 +30,7 @@ speechTrain = [
         verbosity = 0
         randomize = true
 
-        # Description of the corpus – a file will contains all logical sequence keys that identify the same sequence across different deserializers.
+        # Description of the corpus - a file that will contain all logical sequence keys that identify the same sequence across different deserializers.
         # Possibly support other types of parameters in the future (such as regex, etc.). For now just file with id per line.
         corpus = [
         ]

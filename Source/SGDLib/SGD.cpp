@@ -2377,7 +2377,7 @@ SGDParams::SGDParams(const ConfigRecordType& configSGD, size_t sizeofElemType)
     m_minibatchSearchCriterionErrorMargin = configAALR(L"minibatchSearchCriterionErrorMargin", (size_t) 1);
 
     // the number of minibatches used to search
-    // the learning rate. Its typically set to 10-20% of
+    // the learning rate. It's typically set to 10-20% of
     // the total minibatches in an epoch.
     m_numMiniBatch4LRSearch = configAALR(L"numMiniBatch4LRSearch", ConfigRecordType::Array(intargvector(vector<int>{500})));
 
