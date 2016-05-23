@@ -23,7 +23,7 @@ public:
     HTKDataDeserializer(CorpusDescriptorPtr corpus, const ConfigParameters& config, bool primary);
 
     // TODO: Should be removed, when legacy config goes away, expects configuration in a legacy mode.
-    HTKDataDeserializer(CorpusDescriptorPtr corpus, const ConfigParameters& featureConfig, const std::wstring& featureName, bool primary);
+    HTKDataDeserializer(int verbosity, CorpusDescriptorPtr corpus, const ConfigParameters& featureConfig, const std::wstring& featureName, bool primary);
 
     // Get information about chunks.
     virtual ChunkDescriptions GetChunkDescriptions() override;
@@ -64,10 +64,11 @@ private:
 
     CorpusDescriptorPtr m_corpus;
 
+    // General configuration
     int m_verbosity;
 
     // Total number of frames.
-    size_t m_totalNumberOfFrames;
+    size_t m_totalNumberOfFrames = 0;
 
     // Flag that indicates whether a single speech frames should be exposed as a sequence.
     bool m_frameMode;
@@ -80,8 +81,8 @@ private:
     std::map<size_t, std::pair<size_t, size_t>> m_keyToChunkLocation;
 
     // Auxiliary data for checking against the data in the feature file.
-    unsigned int m_samplePeriod;
-    size_t m_ioFeatureDimension;
+    unsigned int m_samplePeriod = 0;
+    size_t m_ioFeatureDimension = 0;
     std::string m_featureKind;
 };
 

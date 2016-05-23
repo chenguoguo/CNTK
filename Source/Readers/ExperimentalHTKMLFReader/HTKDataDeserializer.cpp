@@ -26,12 +26,9 @@ HTKDataDeserializer::HTKDataDeserializer(
     CorpusDescriptorPtr corpus,
     const ConfigParameters& cfg,
     bool primary)
-    : m_ioFeatureDimension(0),
-    m_samplePeriod(0),
-    m_verbosity(0),
-    m_corpus(corpus),
-    m_totalNumberOfFrames(0),
-    m_primary(primary)
+    : m_verbosity(0),
+      m_corpus(corpus),
+      m_primary(primary)
 {
     // TODO: This should be read in one place, potentially given by SGD.
     m_frameMode = (ConfigValue)cfg("frameMode", "true");
@@ -61,15 +58,13 @@ HTKDataDeserializer::HTKDataDeserializer(
 }
 
 HTKDataDeserializer::HTKDataDeserializer(
+    int verbosity,
     CorpusDescriptorPtr corpus,
     const ConfigParameters& feature,
     const wstring& featureName,
     bool primary)
-    : m_ioFeatureDimension(0),
-      m_samplePeriod(0),
-      m_verbosity(0),
+    : m_verbosity(verbosity),
       m_corpus(corpus),
-      m_totalNumberOfFrames(0),
       m_primary(primary)
 {
     // The frame mode is currently specified once per configuration,
@@ -209,7 +204,7 @@ void HTKDataDeserializer::InitializeFeatureInformation()
         msra::asr::htkfeatreader reader;
         reader.getinfo(m_chunks.front().GetUtterance(0)->GetPath(), m_featureKind, m_ioFeatureDimension, m_samplePeriod);
         fprintf(stderr, "HTKDataDeserializer::HTKDataDeserializer: determined feature kind as %d-dimensional '%s' with frame shift %.1f ms\n",
-            (int)m_dimension, m_featureKind.c_str(), m_samplePeriod / 1e4);
+            (int)m_ioFeatureDimension, m_featureKind.c_str(), m_samplePeriod / 1e4);
     });
 }
 
@@ -301,7 +296,7 @@ private:
 };
 
 
-// Represets a chunk data in memory. Given up to the randomizer.
+// Represents a chunk data in memory. Given up to the randomizer.
 // It is up to the randomizer to decide when to release a particular chunk.
 class HTKDataDeserializer::HTKChunk : public Chunk
 {

@@ -19,7 +19,7 @@
 
 namespace Microsoft { namespace MSR { namespace CNTK {
 
-std::vector<IDataDeserializerPtr> CreateDeserializers(const ConfigParameters& readerConfig)
+std::vector<IDataDeserializerPtr> CreateDeserializers(int verbosity, const ConfigParameters& readerConfig)
 {
     std::vector<std::wstring> featureNames;
     std::vector<std::wstring> labelNames;
@@ -42,7 +42,7 @@ std::vector<IDataDeserializerPtr> CreateDeserializers(const ConfigParameters& re
     // TODO: should we make this explicit configuration parameter
     for (const auto& featureName : featureNames)
     {
-        auto deserializer = std::make_shared<HTKDataDeserializer>(corpus, readerConfig(featureName), featureName, primary);
+        auto deserializer = std::make_shared<HTKDataDeserializer>(verbosity, corpus, readerConfig(featureName), featureName, primary);
         primary = false;
         featureDeserializers.push_back(deserializer);
     }
@@ -99,7 +99,8 @@ HTKMLFReader::HTKMLFReader(MemoryProviderPtr provider,
 
     ConfigHelper config(readerConfig);
     size_t window = config.GetRandomizationWindow();
-    auto deserializers = CreateDeserializers(readerConfig);
+    int verbosity = readerConfig(L"verbosity", 0);
+    auto deserializers = CreateDeserializers(verbosity, readerConfig);
     if (deserializers.empty())
     {
         LogicError("Please specify at least a single input stream.");
@@ -107,7 +108,6 @@ HTKMLFReader::HTKMLFReader(MemoryProviderPtr provider,
 
     bool cleanse = readerConfig(L"checkData", false);
     auto bundler = std::make_shared<Bundler>(readerConfig, deserializers[0], deserializers, cleanse);
-    int verbosity = readerConfig(L"verbosity", 2);
     std::wstring readMethod = config.GetRandomizer();
 
     // TODO: this should be bool. Change when config per deserializer is allowed.

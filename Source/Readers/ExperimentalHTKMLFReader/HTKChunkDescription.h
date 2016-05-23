@@ -5,6 +5,8 @@
 
 #pragma once
 
+#define __STDC_FORMAT_MACROS
+#include <inttypes.h>
 #include "DataDeserializer.h"
 #include "../HTKMLFReader/htkfeatio.h"
 #include "UtteranceDescription.h"
@@ -124,7 +126,10 @@ public:
 
             if (verbosity)
             {
-                fprintf(stderr, "RequireData: %d utterances read\n", (int)m_utterances.size());
+                fprintf(stderr, "RequireData: read %" PRIu64 " utterances (%" PRIu64 " frames, %" PRIu64 " bytes)\n",
+                        m_utterances.size(),
+                        m_totalFrames,
+                        sizeof(float) * m_totalFrames * featureDimension);
             }
         }
         catch (...)
