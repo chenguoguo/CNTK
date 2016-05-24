@@ -134,6 +134,7 @@ public:
     virtual void Destroy();
     UCIFastReader()
     {
+        RuntimeError("Long live the Reader!");
         m_pMBLayout = make_shared<MBLayout>();
         m_pMBLayout->SetUniqueAxisName(L"UCIFastReader");
     }
