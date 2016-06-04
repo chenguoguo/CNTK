@@ -167,18 +167,16 @@ void ComputationNetwork::DeleteNode(const std::wstring& nodeName)
 // replace a named node by newNode of the same type under the same name, including moving over all network links
 // This is used in the KL-reg based adaptation to reduce feature copy
 // need to update all the mappings as well childrens.
-void ComputationNetwork::ChangeNode(wstring nodeName, ComputationNodeBasePtr newNode)
+void ComputationNetwork::ReplaceNode(wstring nodeName, ComputationNodeBasePtr newNode)
 {
     ComputationNodeBasePtr oldNode = GetNodeFromName(nodeName);
 
-    if (newNode->NodeName() != nodeName) // TODO: This was not tested for earlier; I hope no code depends on this.
-        InvalidArgument("ChangeNode: newNode must have the same name as the old node.");
     if (oldNode->OperationName() != newNode->OperationName())
-        InvalidArgument("ChangeNode: newNode must have the same type as the old node.");
+        InvalidArgument("ReplaceNode: newNode must have the same type as the old node.");
 
     InvalidateCompiledNetwork();
 
-    // change all nodes to have old node as input to point to the new node instead
+    // change all nodes that have old node as input to point to the new node instead
     for (auto nodeIter = m_nameToNodeMap.begin(); nodeIter != m_nameToNodeMap.end(); nodeIter++)
     {
         ComputationNodeBasePtr node = nodeIter->second;
@@ -205,6 +203,37 @@ void ComputationNetwork::ChangeNode(wstring nodeName, ComputationNodeBasePtr new
         for (int i = 0; i < group.size(); i++)
             if (group[i] == oldNode)
                 group[i] = newNode;
+    }
+}
+
+// Inserts a newNode such that the named node serves as the input to the newNode
+// Prior to this call, namedNode should be set as the input to newNode.
+// need to update all the mappings as well children.
+void ComputationNetwork::InsertNode(wstring nodeName, ComputationNodeBasePtr newNode)
+{
+    newNode->Validate(false);
+
+    ComputationNodeBasePtr oldNode = GetNodeFromName(nodeName);
+
+    InvalidateCompiledNetwork();
+
+    // change all nodes that have old node as input to point to the new node instead
+    for (auto nodeIter = m_nameToNodeMap.begin(); nodeIter != m_nameToNodeMap.end(); nodeIter++)
+    {
+        ComputationNodeBasePtr node = nodeIter->second;
+        for (int i = 0; i < node->GetNumInputs(); i++)
+            if (node->GetInputs()[i] == oldNode)
+                node->SetInput(i, newNode);
+    }
+
+    // insert the node in the network
+    AddNodeToNet(newNode);
+
+    // also update node groups
+    for (auto nodeTag : newNode->GetTags())
+    {
+        auto group = GetNodeGroup(nodeTag);
+        group.push_back(newNode);
     }
 }
 

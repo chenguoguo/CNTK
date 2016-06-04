@@ -360,7 +360,8 @@ public:
     void RenameNode(const std::wstring& nodeNameOrig, const std::wstring& nodeNameNew);
     void RenameNode(ComputationNodeBasePtr node, const std::wstring& newNodeName);
     void DeleteNode(const std::wstring& nodeName);
-    void ChangeNode(wstring nodeName, ComputationNodeBasePtr newNode);
+    void ReplaceNode(wstring nodeName, ComputationNodeBasePtr newNode);
+    void InsertNode(wstring nodeName, ComputationNodeBasePtr newNode);
     void ReplaceLeafNode(wstring oldNodeName, ComputationNodeBasePtr newNode);
     void ReplaceFinalCriterionNode(wstring oldNodeName, ComputationNodeBasePtr newNode);
     void AddFeatureNode(ComputationNodeBasePtr featureNode);
@@ -607,6 +608,28 @@ public:
                 parents[child].insert(node);
         }
         return parents;
+    }
+
+    //Return an output node for given input
+    //If not found, return nullptr
+    //TODO: there should be a map from input to output nodes, so that this operation doesn't take O(n^2)
+    ComputationNodeBasePtr GetOutputNode(const std::wstring& inputNodeName)
+    {
+        for (const auto& iter : m_nameToNodeMap)
+        {
+            const auto& node = iter.second;
+
+            //Iterate over inputs of this node
+            for (const auto& inputNode : node->GetInputs())
+            {
+                if (inputNode->GetName().compare(inputNodeName) == 0)
+                {
+                    return node;
+                }
+            }
+        }
+
+        return nullptr;
     }
 
     std::list<ComputationNodeBasePtr> GetNodesWithType(const wstring typeName, const ComputationNodeBasePtr& rootNode = nullptr)
