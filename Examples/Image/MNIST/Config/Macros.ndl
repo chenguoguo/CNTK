@@ -36,6 +36,10 @@ ConvW(outMap, inWCount, wScale) = [
     W = LearnableParameter(outMap, inWCount, init="uniform", initValueScale=wScale, initOnCPUOnly=true)
 ]
 
+DeConvW(outMap, inWCount, kW, kH, wScale) = [
+    W = LearnableParameter(outMap, inWCount, init="bilinear", kernelWidth=kW, kernelHeight=kH, initValueScale=wScale, initOnCPUOnly=true)
+]
+
 ConvB(outMap, bValue) = [
     b = ImageParameter(1, 1, outMap, init="fixedValue", value=bValue, imageLayout=$imageLayout$)
 ]
@@ -90,7 +94,7 @@ ConvBNReLULayer(inp, outMap, inWCount, kW, kH, hStride, vStride, wScale, bValue,
 
 DeconvReLULayer(inp, kW, kH, inMap, inWCount, outMap, hStride, vStride, lpad, upad, wScale, bValue) = [
     # No bias here.
-    w = ConvW(outMap, inWCount, wScale)
+    w = DeConvW(outMap, inWCount, kW, kH, wScale)
     act = RectifiedLinear(inp)
     out = DeConv(w, act, kW, kH, inMap, outMap, hStride, vStride, lpad, upad)
 ]
