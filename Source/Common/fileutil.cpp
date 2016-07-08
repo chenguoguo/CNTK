@@ -1629,6 +1629,7 @@ static size_t fgetfilechars(const std::wstring& path, vector<char>& buffer)
     buffer.reserve(len + 1);
     freadOrDie(buffer, len, f);
     buffer.push_back(0); // this makes it a proper C string
+    fclose(f); // safe to close the file after read
     return len;
 }
 
