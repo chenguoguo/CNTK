@@ -958,14 +958,6 @@ public:
         topDict->namedArgs = topMembers;
         return topDict;
     }
-    // simple test function for use during development
-    static void Test()
-    {
-        let parserTest = L"a=1\na1_=13;b=2 // cmt\ndo = (print\n:train:eval) ; x = array[1..13] (i=>1+i*print.message==13*42) ; print = new PrintAction [ message = 'Hello World' ]";
-        wstringstream expressionStream;
-        ParseConfigDictFromString(parserTest, L"Test", vector<wstring>())->DumpToStream(expressionStream);
-        fprintf(stderr, "%ls\n", expressionStream.str());
-    }
 };
 
 // globally exported functions to execute the parser
