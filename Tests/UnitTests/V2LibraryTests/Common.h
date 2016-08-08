@@ -1,8 +1,8 @@
 #pragma once
-
 #include <exception>
 #include <algorithm>
 #include "CNTKLibrary.h"
+#include "Platform.h"
 #include <functional>
 
 static const double relativeTolerance = 0.001f;
@@ -23,24 +23,6 @@ inline void FloatingPointVectorCompare(const std::vector<ElementType>& first, co
 
 #pragma warning(push)
 #pragma warning(disable: 4996)
-
-#ifndef _MSC_VER
-#include <unistd.h>
-static inline std::string wtocharpath(const wchar_t *p)
-{
-    size_t len = wcslen(p);
-    std::string buf;
-    buf.resize(2 * len + 1);            // max: 1 wchar => 2 mb chars
-    ::wcstombs(&buf[0], p, buf.size()); // note: technically it is forbidden to stomp over std::strings 0 terminator, but it is known to work in all implementations
-    buf.resize(strlen(&buf[0]));        // set size correctly for shorter strings
-    return buf;
-}
-
-static inline int _wunlink(const wchar_t *p)
-{
-    return unlink(wtocharpath(p).c_str());
-}
-#endif
 
 template <typename ElementType>
 inline void SaveAndReloadModel(CNTK::FunctionPtr& functionPtr, const std::vector<CNTK::Variable*>& variables, const CNTK::DeviceDescriptor& device)
