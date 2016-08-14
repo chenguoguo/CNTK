@@ -430,7 +430,7 @@ public:
         if (seqPos)
         {
             SequencePosition sequencePos(numbers->size(), labels->size(),
-                                         m_beginSequence ? seqFlagStartLabel : 0 | m_endSequence ? seqFlagStopLabel : 0 | seqFlagLineBreak);
+                                         (m_beginSequence ? seqFlagStartLabel : 0) | (m_endSequence ? seqFlagStopLabel : 0) | seqFlagLineBreak);
             // add the final sequence element if needed
             if (!(sequencePos.labelPos == sequencePositionLast.labelPos && sequencePos.numberPos == sequencePositionLast.numberPos))
             {
@@ -595,7 +595,7 @@ public:
 
             // add a sequence element to the list
             SequencePosition sequencePos(numbers->size(), labels->size(),
-                                         m_beginSequence ? seqFlagStartLabel : 0 | m_endSequence ? seqFlagStopLabel : 0 | seqFlagLineBreak);
+                                         (m_beginSequence ? seqFlagStartLabel : 0) | (m_endSequence ? seqFlagStopLabel : 0) | seqFlagLineBreak);
             seqPos->push_back(sequencePos);
 
             lineCount++;
