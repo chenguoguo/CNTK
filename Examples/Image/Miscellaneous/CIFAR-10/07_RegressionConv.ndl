@@ -84,15 +84,6 @@ DNN=[
     h1_d = Dropout(h1)
     ol = DNNLastLayer(hiddenDim, LabelDim, h1_d, fc2WScale, fc2BValue)
     
-    #CE = CrossEntropyWithSoftmax(labels, ol, tag = Criteria)
-    #Err = ErrorPrediction(labels, ol, tag = Eval)
-    
-    # rmse = sqrt(SquareError(regrLabels, ol) / LabelDim)
-    # l2loss = sqrt(SquareError(regrLabels, ol))
-    # sqErr = SquareError(regrLabels, ol)
-    # criterionNodes  = (sqErr)
-    # evaluationNodes = (sqErr)
-    
     # define regression loss
     # rmse = sqrt(SquareError(regrLabels, ol) / LabelDim)
     sqerr = SquareError(regrLabels, ol)

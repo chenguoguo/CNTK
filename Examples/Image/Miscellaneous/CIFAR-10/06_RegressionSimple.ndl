@@ -21,9 +21,7 @@ ndlMacros = [
 
 DNN=[
     hiddenDim = 64
-    
-    # h1 = DNNImageReLULayer(ImageW, ImageH, ImageC, hiddenDim, features, 1, 0)
-    h1 = DnnImageLastLayer(ImageW, ImageH, ImageC, hiddenDim, features, 1, 0)
+    h1 = DnnImageLastLayer(ImageW, ImageH, ImageC, hiddenDim, featScaled, 1, 0)
     ol = DNNLastLayer(hiddenDim, LabelDim, h1, 1, 0)
     
     # define regression loss
